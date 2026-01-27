@@ -1,0 +1,40 @@
+<svg width="200" height="80" viewBox="0 0 200 80" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Neon glow filters -->
+    <filter id="cyanGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2" result="blur1"/>
+      <feGaussianBlur stdDeviation="4" result="blur2"/>
+      <feMerge>
+        <feMergeNode in="blur2"/>
+        <feMergeNode in="blur1"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="magentaGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Mini dice icon -->
+  <g transform="translate(10, 18)">
+    <rect x="0" y="0" width="44" height="44" rx="8" fill="#1a1a3a" stroke="#00f0ff" stroke-width="2" filter="url(#cyanGlow)"/>
+    <!-- Dots for 5 -->
+    <circle cx="12" cy="12" r="4" fill="#ffffff"/>
+    <circle cx="32" cy="12" r="4" fill="#ffffff"/>
+    <circle cx="22" cy="22" r="4" fill="#ffffff"/>
+    <circle cx="12" cy="32" r="4" fill="#ffffff"/>
+    <circle cx="32" cy="32" r="4" fill="#ffffff"/>
+  </g>
+  
+  <!-- YAHTZEE Text -->
+  <text x="120" y="48" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-size="28" font-weight="bold" fill="#00f0ff" filter="url(#cyanGlow)" letter-spacing="2">
+    YAHTZEE
+  </text>
+  
+  <!-- Underline accent -->
+  <line x1="65" y1="56" x2="175" y2="56" stroke="#ff00ff" stroke-width="2" filter="url(#magentaGlow)"/>
+</svg>
