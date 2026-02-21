@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
+import { Pressable, Text, StyleSheet, View } from 'react-native';
 import { Colors, BorderRadius, Spacing, FontSize, Glow } from '../utils/constants';
 
 interface RollButtonProps {
@@ -13,19 +13,20 @@ export function RollButton({ onRoll, rollsLeft, disabled = false }: RollButtonPr
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity
+      <Pressable
         onPress={onRoll}
         disabled={isDisabled}
-        style={[
+        style={({ hovered, pressed }) => [
           styles.button,
           isDisabled ? styles.buttonDisabled : styles.buttonActive,
+          hovered && !isDisabled && styles.buttonHovered,
+          pressed && !isDisabled && styles.buttonPressed,
         ]}
-        activeOpacity={0.8}
       >
         <Text style={[styles.buttonText, isDisabled && styles.buttonTextDisabled]}>
           ROLL
         </Text>
-      </TouchableOpacity>
+      </Pressable>
       <View style={styles.rollsContainer}>
         {[0, 1, 2].map((i) => (
           <View
@@ -59,6 +60,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     borderColor: Colors.primary,
     ...Glow.cyan,
+  },
+  buttonHovered: {
+    backgroundColor: Colors.primary + '20',
+    borderColor: Colors.primary,
+    shadowRadius: 15,
+  },
+  buttonPressed: {
+    backgroundColor: Colors.primary + '40',
+    transform: [{ scale: 0.98 }],
   },
   buttonDisabled: {
     backgroundColor: 'transparent',

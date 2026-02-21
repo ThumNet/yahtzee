@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, Pressable, StyleSheet, SafeAreaView, Platform } from 'react-native';
 import { Logo } from '../components/Logo';
 import { Colors, Spacing, FontSize, BorderRadius, Glow } from '../utils/constants';
 import { loadHighScores } from '../utils/storage';
@@ -41,20 +41,41 @@ export function HomeScreen({ onStartGame }: HomeScreenProps) {
           )}
 
           <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.playButton} onPress={onStartGame} activeOpacity={0.8}>
+            <Pressable 
+              style={({ hovered, pressed }) => [
+                styles.playButton,
+                hovered && styles.playButtonHovered,
+                pressed && styles.playButtonPressed,
+              ]} 
+              onPress={onStartGame}
+            >
               <Text style={styles.playButtonText}>PLAY</Text>
-            </TouchableOpacity>
+            </Pressable>
 
-            <TouchableOpacity style={styles.secondaryButton} activeOpacity={0.8}>
+            <Pressable 
+              style={({ hovered, pressed }) => [
+                styles.secondaryButton,
+                hovered && styles.secondaryButtonHovered,
+                pressed && styles.secondaryButtonPressed,
+              ]}
+            >
               <Text style={styles.secondaryButtonText}>HOW TO PLAY</Text>
-            </TouchableOpacity>
+            </Pressable>
 
-            <TouchableOpacity style={styles.secondaryButton} activeOpacity={0.8}>
+            <Pressable 
+              style={({ hovered, pressed }) => [
+                styles.secondaryButton,
+                hovered && styles.secondaryButtonHovered,
+                pressed && styles.secondaryButtonPressed,
+              ]}
+            >
               <Text style={styles.secondaryButtonText}>HIGH SCORES</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
 
-          <Text style={styles.footer}>TAP PLAY TO START</Text>
+          <Text style={styles.footer}>
+            {Platform.OS === 'web' ? 'CLICK PLAY TO START' : 'TAP PLAY TO START'}
+          </Text>
         </View>
       </SafeAreaView>
   );
@@ -133,6 +154,14 @@ const styles = StyleSheet.create({
     borderColor: Colors.success,
     ...Glow.green,
   },
+  playButtonHovered: {
+    backgroundColor: Colors.success + '15',
+    shadowRadius: 15,
+  },
+  playButtonPressed: {
+    backgroundColor: Colors.success + '30',
+    transform: [{ scale: 0.98 }],
+  },
   playButtonText: {
     color: Colors.success,
     fontSize: FontSize.xxl,
@@ -149,6 +178,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: Colors.border,
+  },
+  secondaryButtonHovered: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primary + '10',
+  },
+  secondaryButtonPressed: {
+    backgroundColor: Colors.primary + '20',
+    transform: [{ scale: 0.98 }],
   },
   secondaryButtonText: {
     color: Colors.textSecondary,

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated, Easing } from 'react-native';
+import { Platform, View, StyleSheet, Animated, Easing } from 'react-native';
 import { Logo } from '../components/Logo';
 import { Colors } from '../utils/constants';
 
@@ -11,6 +11,9 @@ export function SplashScreen({ onFinish }: SplashScreenProps) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  // Faster transition on web
+  const SPLASH_DURATION = Platform.OS === 'web' ? 1200 : 2500;
 
   useEffect(() => {
     // Entrance animation
@@ -56,7 +59,7 @@ export function SplashScreen({ onFinish }: SplashScreenProps) {
       }).start(() => {
         onFinish();
       });
-    }, 2500);
+    }, SPLASH_DURATION);
 
     return () => clearTimeout(timer);
   }, []);

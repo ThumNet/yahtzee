@@ -1,5 +1,5 @@
 import React, { useCallback, useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, useWindowDimensions, Platform } from 'react-native';
+import { View, Text, Pressable, StyleSheet, SafeAreaView, useWindowDimensions, Platform } from 'react-native';
 import { DiceTray } from '../components/DiceTray';
 import { RollButton } from '../components/RollButton';
 import { Scorecard } from '../components/Scorecard';
@@ -230,16 +230,37 @@ export function GameScreen({ onGameOver, onQuit }: GameScreenProps) {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <TouchableOpacity onPress={onQuit} style={styles.quitButton}>
+          <Pressable 
+            onPress={onQuit} 
+            style={({ hovered, pressed }) => [
+              styles.quitButton,
+              hovered && styles.quitButtonHovered,
+              pressed && styles.quitButtonPressed,
+            ]}
+          >
             <Text style={styles.quitButtonText}>QUIT</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={toggleMute} style={styles.muteButton}>
+          </Pressable>
+          <Pressable 
+            onPress={toggleMute} 
+            style={({ hovered, pressed }) => [
+              styles.muteButton,
+              hovered && styles.muteButtonHovered,
+              pressed && styles.muteButtonPressed,
+            ]}
+          >
             <Text style={styles.muteButtonText}>{isMuted ? 'UNMUTE' : 'MUTE'}</Text>
-          </TouchableOpacity>
+          </Pressable>
           {Platform.OS === 'web' && (
-            <TouchableOpacity onPress={() => setShowKeyboardHelp(true)} style={styles.helpButton}>
+            <Pressable 
+              onPress={() => setShowKeyboardHelp(true)} 
+              style={({ hovered, pressed }) => [
+                styles.helpButton,
+                hovered && styles.helpButtonHovered,
+                pressed && styles.helpButtonPressed,
+              ]}
+            >
               <Text style={styles.helpButtonText}>?</Text>
-            </TouchableOpacity>
+            </Pressable>
           )}
         </View>
         <View style={styles.roundContainer}>
@@ -306,6 +327,13 @@ const styles = StyleSheet.create({
     borderColor: Colors.error,
     borderRadius: BorderRadius.md,
   },
+  quitButtonHovered: {
+    backgroundColor: Colors.error + '20',
+  },
+  quitButtonPressed: {
+    backgroundColor: Colors.error + '40',
+    transform: [{ scale: 0.95 }],
+  },
   quitButtonText: {
     color: Colors.error,
     fontSize: FontSize.xs,
@@ -317,6 +345,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.textSecondary,
     borderRadius: BorderRadius.md,
+  },
+  muteButtonHovered: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primary + '10',
+  },
+  muteButtonPressed: {
+    backgroundColor: Colors.primary + '30',
+    transform: [{ scale: 0.95 }],
   },
   muteButtonText: {
     color: Colors.textSecondary,
@@ -332,6 +368,14 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  helpButtonHovered: {
+    backgroundColor: Colors.primary + '20',
+    ...Glow.subtle,
+  },
+  helpButtonPressed: {
+    backgroundColor: Colors.primary + '40',
+    transform: [{ scale: 0.95 }],
   },
   helpButtonText: {
     color: Colors.primary,

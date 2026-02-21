@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Animated, Easing } from 'react-native';
+import { View, Text, Pressable, StyleSheet, SafeAreaView, Animated, Easing } from 'react-native';
 import { Confetti } from '../components/Confetti';
 import { Colors, Spacing, FontSize, BorderRadius, Glow } from '../utils/constants';
 import { saveHighScore, loadHighScores } from '../utils/storage';
@@ -141,13 +141,27 @@ export function ResultsScreen({ score, onPlayAgain, onGoHome }: ResultsScreenPro
         </Animated.View>
 
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.playAgainButton} onPress={onPlayAgain} activeOpacity={0.8}>
+          <Pressable 
+            style={({ hovered, pressed }) => [
+              styles.playAgainButton,
+              hovered && styles.playAgainButtonHovered,
+              pressed && styles.playAgainButtonPressed,
+            ]} 
+            onPress={onPlayAgain}
+          >
             <Text style={styles.playAgainButtonText}>PLAY AGAIN</Text>
-          </TouchableOpacity>
+          </Pressable>
 
-          <TouchableOpacity style={styles.homeButton} onPress={onGoHome} activeOpacity={0.8}>
+          <Pressable 
+            style={({ hovered, pressed }) => [
+              styles.homeButton,
+              hovered && styles.homeButtonHovered,
+              pressed && styles.homeButtonPressed,
+            ]} 
+            onPress={onGoHome}
+          >
             <Text style={styles.homeButtonText}>HOME</Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
     </SafeAreaView>
@@ -225,6 +239,14 @@ const styles = StyleSheet.create({
     borderColor: Colors.success,
     ...Glow.green,
   },
+  playAgainButtonHovered: {
+    backgroundColor: Colors.success + '15',
+    shadowRadius: 15,
+  },
+  playAgainButtonPressed: {
+    backgroundColor: Colors.success + '30',
+    transform: [{ scale: 0.98 }],
+  },
   playAgainButtonText: {
     color: Colors.success,
     fontSize: FontSize.lg,
@@ -241,6 +263,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: Colors.border,
+  },
+  homeButtonHovered: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primary + '10',
+  },
+  homeButtonPressed: {
+    backgroundColor: Colors.primary + '20',
+    transform: [{ scale: 0.98 }],
   },
   homeButtonText: {
     color: Colors.textSecondary,

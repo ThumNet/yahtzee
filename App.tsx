@@ -1,13 +1,15 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, lazy, Suspense } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, ActivityIndicator } from 'react-native';
 import { ScreenManager } from './src/components/ScreenManager';
 import { SoundProvider } from './src/contexts/SoundContext';
-import { SplashScreen } from './src/screens/SplashScreen';
-import { HomeScreen } from './src/screens/HomeScreen';
-import { GameScreen } from './src/screens/GameScreen';
-import { ResultsScreen } from './src/screens/ResultsScreen';
 import { Colors } from './src/utils/constants';
+
+// Lazy load screens to reduce initial bundle size
+const SplashScreen = lazy(() => import('./src/screens/SplashScreen').then(m => ({ default: m.SplashScreen })));
+const HomeScreen = lazy(() => import('./src/screens/HomeScreen').then(m => ({ default: m.HomeScreen })));
+const GameScreen = lazy(() => import('./src/screens/GameScreen').then(m => ({ default: m.GameScreen })));
+const ResultsScreen = lazy(() => import('./src/screens/ResultsScreen').then(m => ({ default: m.ResultsScreen })));
 
 type Screen = 'splash' | 'home' | 'game' | 'results';
 
@@ -63,9 +65,15 @@ export default function App() {
     <SoundProvider>
       <View style={styles.container}>
         <StatusBar style="light" />
-        <ScreenManager screenKey={currentScreen}>
-          {renderScreen()}
-        </ScreenManager>
+        <Suspense fallback={
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={Colors.primary} />
+          </View>
+        }>
+          <ScreenManager screenKey={currentScreen}>
+            {renderScreen()}
+          </ScreenManager>
+        </Suspense>
       </View>
     </SoundProvider>
   );
@@ -74,6 +82,12 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: Colors.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: Colors.background,
   },
 });

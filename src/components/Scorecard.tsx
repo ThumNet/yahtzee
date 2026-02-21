@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
+import { View, Text, Pressable, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
 import { ScoreCategory, Scorecard as ScorecardType, UPPER_CATEGORIES, LOWER_CATEGORIES } from '../types';
 import { Colors, BorderRadius, Spacing, FontSize } from '../utils/constants';
 import { calculateUpperTotal, calculateUpperBonus, calculateLowerTotal } from '../utils/scoring';
@@ -32,30 +32,50 @@ function ScoreRow({ label, score, potentialScore, onPress, isTotal = false, isBo
   const canScore = !isScored && potentialScore !== null && onPress;
 
   return (
-    <TouchableOpacity
+    <Pressable
       onPress={canScore ? onPress : undefined}
       disabled={!canScore}
-      style={[
+      style={({ hovered, pressed }) => [
         styles.row,
         compact && styles.rowCompact,
         isTotal && styles.rowTotal,
         isBonus && styles.rowBonus,
         canScore && styles.rowSelectable,
         isSelected && styles.rowSelected,
+        hovered && canScore && styles.rowHovered,
+        pressed && canScore && styles.rowPressed,
       ]}
-      activeOpacity={0.7}
     >
-      <Text style={[styles.label, isTotal && styles.labelTotal, compact && styles.labelCompact, isSelected && styles.labelSelected]}>{label}</Text>
-      <View style={styles.scoreContainer}>
-        {isScored ? (
-          <Text style={[styles.score, isTotal && styles.scoreTotal, compact && styles.scoreCompact]}>{score}</Text>
-        ) : potentialScore !== null ? (
-          <Text style={[styles.potentialScore, compact && styles.scoreCompact, isSelected && styles.potentialScoreSelected]}>{potentialScore}</Text>
-        ) : (
-          <Text style={[styles.emptyScore, compact && styles.scoreCompact]}>-</Text>
-        )}
-      </View>
-    </TouchableOpacity>
+      {({ hovered }) => (
+        <>
+          <Text style={[
+            styles.label, 
+            isTotal && styles.labelTotal, 
+            compact && styles.labelCompact, 
+            isSelected && styles.labelSelected,
+            hovered && canScore && styles.labelHovered
+          ]}>
+            {label}
+          </Text>
+          <View style={styles.scoreContainer}>
+            {isScored ? (
+              <Text style={[styles.score, isTotal && styles.scoreTotal, compact && styles.scoreCompact]}>{score}</Text>
+            ) : potentialScore !== null ? (
+              <Text style={[
+                styles.potentialScore, 
+                compact && styles.scoreCompact, 
+                isSelected && styles.potentialScoreSelected,
+                hovered && styles.potentialScoreHovered
+              ]}>
+                {potentialScore}
+              </Text>
+            ) : (
+              <Text style={[styles.emptyScore, compact && styles.scoreCompact]}>-</Text>
+            )}
+          </View>
+        </>
+      )}
+    </Pressable>
   );
 }
 
@@ -264,6 +284,14 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
     borderLeftColor: Colors.primary,
   },
+  rowHovered: {
+    backgroundColor: Colors.primary + '25',
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.primary,
+  },
+  rowPressed: {
+    backgroundColor: Colors.primary + '40',
+  },
   label: {
     fontSize: FontSize.sm,
     color: Colors.text,
@@ -277,6 +305,10 @@ const styles = StyleSheet.create({
   },
   labelSelected: {
     color: Colors.primary,
+  },
+  labelHovered: {
+    color: Colors.primary,
+    fontWeight: 'bold',
   },
   scoreContainer: {
     minWidth: 40,
@@ -308,6 +340,10 @@ const styles = StyleSheet.create({
   potentialScoreSelected: {
     color: Colors.primary,
     fontWeight: 'bold',
+  },
+  potentialScoreHovered: {
+    color: Colors.primary,
+    textShadowRadius: 10,
   },
   emptyScore: {
     fontSize: FontSize.md,

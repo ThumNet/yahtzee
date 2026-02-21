@@ -6,7 +6,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -24,7 +23,33 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "name": "Yahtzee Online",
+      "shortName": "Yahtzee",
+      "description": "A classic Yahtzee dice game played in your browser.",
+      "backgroundColor": "#0a0a1a",
+      "themeColor": "#00f0ff",
+      "display": "standalone",
+      "orientation": "any",
+      "lang": "en",
+      "splash": {
+        "image": "./assets/splash-icon.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#0a0a1a"
+      },
+      "config": {
+        "pwa": {
+          "manifest": {
+            "name": "Yahtzee Online",
+            "short_name": "Yahtzee",
+            "description": "A classic Yahtzee dice game played in your browser.",
+            "background_color": "#0a0a1a",
+            "theme_color": "#00f0ff",
+            "display": "standalone"
+          }
+        }
+      }
     }
   }
 }
