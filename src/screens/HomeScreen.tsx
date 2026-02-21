@@ -1,203 +1,191 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, SafeAreaView, Platform } from 'react-native';
 import { Logo } from '../components/Logo';
-import { Colors, Spacing, FontSize, BorderRadius, Glow } from '../utils/constants';
+import { KeyboardHelpModal } from '../components/KeyboardHelpModal';
+import { Colors, Spacing, FontSize, BorderRadius } from '../utils/constants';
 import { loadHighScores } from '../utils/storage';
 
 interface HomeScreenProps {
   onStartGame: () => void;
 }
 
+interface NeonButtonProps {
+  label: string;
+  onClick: () => void;
+  variant?: 'primary' | 'secondary';
+  focused?: boolean;
+}
+
+function NeonButton({ label, onClick, variant = 'secondary', focused = false }: NeonButtonProps) {
+  const [hovered, setHovered] = useState(false);
+  const [pressed, setPressed] = useState(false);
+
+  const isPrimary = variant === 'primary';
+  const color = isPrimary ? Colors.success : Colors.border;
+  const hoverColor = isPrimary ? Colors.success : Colors.primary;
+  const isActive = hovered || focused;
+
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => { setHovered(false); setPressed(false); }}
+      onMouseDown={() => setPressed(true)}
+      onMouseUp={() => setPressed(false)}
+      style={{
+        backgroundColor: pressed
+          ? (isPrimary ? Colors.success + '30' : Colors.primary + '20')
+          : isActive
+          ? (isPrimary ? Colors.success + '15' : Colors.primary + '10')
+          : 'transparent',
+        paddingTop: isPrimary ? Spacing.lg : Spacing.md,
+        paddingBottom: isPrimary ? Spacing.lg : Spacing.md,
+        borderRadius: isPrimary ? BorderRadius.xl : BorderRadius.lg,
+        border: `${isPrimary ? 2 : 1}px solid ${isActive ? hoverColor : color}`,
+        boxShadow: isPrimary
+          ? `0 0 ${isActive ? 15 : 10}px ${Colors.success}`
+          : focused ? `0 0 8px ${Colors.primary}` : 'none',
+        cursor: 'pointer',
+        transform: pressed ? 'scale(0.98)' : 'scale(1)',
+        transition: 'all 0.15s',
+        width: '100%',
+        outline: 'none',
+      }}
+    >
+      <span style={{
+        color: isPrimary ? Colors.success : (focused ? Colors.primary : Colors.textSecondary),
+        fontSize: isPrimary ? FontSize.xxl : FontSize.sm,
+        fontWeight: isPrimary ? 'bold' : '600',
+        letterSpacing: isPrimary ? 6 : 2,
+        textShadow: isPrimary ? `0 0 10px ${Colors.success}` : focused ? `0 0 6px ${Colors.primary}` : 'none',
+      }}>
+        {label}
+      </span>
+    </button>
+  );
+}
+
+const MENU_ITEMS = ['PLAY', 'HOW TO PLAY', 'HIGH SCORES'] as const;
+type MenuItem = typeof MENU_ITEMS[number];
+
 export function HomeScreen({ onStartGame }: HomeScreenProps) {
   const [highScore, setHighScore] = useState<number | null>(null);
+  const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
+  const [focusedIndex, setFocusedIndex] = useState(0);
+
+  const handleMenuAction = (item: MenuItem) => {
+    if (item === 'PLAY') onStartGame();
+    else if (item === 'HOW TO PLAY') setShowKeyboardHelp(true);
+  };
 
   useEffect(() => {
     const fetchHighScore = async () => {
       const scores = await loadHighScores();
-      if (scores.length > 0) {
-        setHighScore(scores[0].score);
-      }
+      if (scores.length > 0) setHighScore(scores[0].score);
     };
     fetchHighScore();
   }, []);
 
+  useEffect(() => {
+    if (showKeyboardHelp) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setFocusedIndex(i => (i + 1) % MENU_ITEMS.length);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setFocusedIndex(i => (i - 1 + MENU_ITEMS.length) % MENU_ITEMS.length);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        handleMenuAction(MENU_ITEMS[focusedIndex]);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [showKeyboardHelp, focusedIndex]);
+
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <View style={styles.logoContainer}>
+    <div style={{
+      flex: 1,
+      backgroundColor: Colors.background,
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100%',
+      position: 'relative',
+    }}>
+      <div style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: Spacing.xl,
+      }}>
+        <div style={{ marginBottom: Spacing.xxl }}>
           <Logo size="small" />
-          </View>
+        </div>
 
-          <View style={styles.diceDecoration}>
-            {[5, 3, 6, 2, 4].map((num, index) => (
-              <View key={index} style={[styles.decorativeDie, index === 2 && styles.decorativeDieCenter]}>
-                <Text style={[styles.dieNumber, index === 2 && styles.dieNumberCenter]}>{num}</Text>
-              </View>
-            ))}
-          </View>
-
-          {highScore !== null && (
-            <Text style={styles.highScoreText}>HIGH SCORE: {highScore}</Text>
-          )}
-
-          <View style={styles.buttonContainer}>
-            <Pressable 
-              style={({ hovered, pressed }) => [
-                styles.playButton,
-                hovered && styles.playButtonHovered,
-                pressed && styles.playButtonPressed,
-              ]} 
-              onPress={onStartGame}
+        <div style={{ display: 'flex', flexDirection: 'row', gap: Spacing.md, marginBottom: Spacing.lg }}>
+          {[5, 3, 6, 2, 4].map((num, index) => (
+            <div
+              key={index}
+              style={{
+                width: index === 2 ? 60 : 50,
+                height: index === 2 ? 60 : 50,
+                backgroundColor: Colors.surface,
+                borderRadius: BorderRadius.lg,
+                border: `2px solid ${index === 2 ? Colors.accent : Colors.primary}`,
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                boxShadow: `0 0 5px ${index === 2 ? Colors.accent : Colors.primary}`,
+              }}
             >
-              <Text style={styles.playButtonText}>PLAY</Text>
-            </Pressable>
+              <span style={{
+                fontSize: index === 2 ? FontSize.xxl : FontSize.xl,
+                fontWeight: 'bold',
+                color: index === 2 ? Colors.accent : Colors.primary,
+                textShadow: `0 0 6px ${index === 2 ? Colors.accent : Colors.primary}`,
+              }}>
+                {num}
+              </span>
+            </div>
+          ))}
+        </div>
 
-            <Pressable 
-              style={({ hovered, pressed }) => [
-                styles.secondaryButton,
-                hovered && styles.secondaryButtonHovered,
-                pressed && styles.secondaryButtonPressed,
-              ]}
-            >
-              <Text style={styles.secondaryButtonText}>HOW TO PLAY</Text>
-            </Pressable>
+        {highScore !== null && (
+          <span style={{
+            color: Colors.accent,
+            fontSize: FontSize.md,
+            fontWeight: 'bold',
+            letterSpacing: 2,
+            marginBottom: Spacing.xl,
+            textShadow: `0 0 8px ${Colors.accent}`,
+          }}>
+            HIGH SCORE: {highScore}
+          </span>
+        )}
 
-            <Pressable 
-              style={({ hovered, pressed }) => [
-                styles.secondaryButton,
-                hovered && styles.secondaryButtonHovered,
-                pressed && styles.secondaryButtonPressed,
-              ]}
-            >
-              <Text style={styles.secondaryButtonText}>HIGH SCORES</Text>
-            </Pressable>
-          </View>
+        <div style={{ width: '100%', maxWidth: 300, display: 'flex', flexDirection: 'column', gap: Spacing.md }}>
+          <NeonButton label="PLAY" onClick={onStartGame} variant="primary" focused={focusedIndex === 0} />
+          <NeonButton label="HOW TO PLAY" onClick={() => setShowKeyboardHelp(true)} focused={focusedIndex === 1} />
+          <NeonButton label="HIGH SCORES" onClick={() => {}} focused={focusedIndex === 2} />
+        </div>
+      </div>
 
-          <Text style={styles.footer}>
-            {Platform.OS === 'web' ? 'CLICK PLAY TO START' : 'TAP PLAY TO START'}
-          </Text>
-        </View>
-      </SafeAreaView>
+      <span style={{
+        position: 'absolute',
+        bottom: Spacing.xxl,
+        left: 0,
+        right: 0,
+        textAlign: 'center',
+        fontSize: FontSize.xs,
+        color: Colors.textSecondary,
+        letterSpacing: 4,
+      }}>
+        USE ARROW KEYS TO NAVIGATE, ENTER TO SELECT
+      </span>
+
+      <KeyboardHelpModal visible={showKeyboardHelp} onClose={() => setShowKeyboardHelp(false)} />
+    </div>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: Spacing.xl,
-  },
-  logoContainer: {
-    marginBottom: Spacing.xxl,
-  },
-  diceDecoration: {
-    flexDirection: 'row',
-    gap: Spacing.md,
-    marginBottom: Spacing.lg,
-  },
-  highScoreText: {
-    color: Colors.accent,
-    fontSize: FontSize.md,
-    fontWeight: 'bold',
-    letterSpacing: 2,
-    marginBottom: Spacing.xl,
-    textShadowColor: Colors.accent,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
-  },
-  decorativeDie: {
-    width: 50,
-    height: 50,
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 2,
-    borderColor: Colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...Glow.subtle,
-  },
-  decorativeDieCenter: {
-    width: 60,
-    height: 60,
-    borderColor: Colors.accent,
-    shadowColor: Colors.accent,
-  },
-  dieNumber: {
-    fontSize: FontSize.xl,
-    fontWeight: 'bold',
-    color: Colors.primary,
-    textShadowColor: Colors.primary,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 6,
-  },
-  dieNumberCenter: {
-    fontSize: FontSize.xxl,
-    color: Colors.accent,
-    textShadowColor: Colors.accent,
-  },
-  buttonContainer: {
-    width: '100%',
-    maxWidth: 300,
-    gap: Spacing.md,
-  },
-  playButton: {
-    backgroundColor: 'transparent',
-    paddingVertical: Spacing.lg,
-    borderRadius: BorderRadius.xl,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: Colors.success,
-    ...Glow.green,
-  },
-  playButtonHovered: {
-    backgroundColor: Colors.success + '15',
-    shadowRadius: 15,
-  },
-  playButtonPressed: {
-    backgroundColor: Colors.success + '30',
-    transform: [{ scale: 0.98 }],
-  },
-  playButtonText: {
-    color: Colors.success,
-    fontSize: FontSize.xxl,
-    fontWeight: 'bold',
-    letterSpacing: 6,
-    textShadowColor: Colors.success,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 10,
-  },
-  secondaryButton: {
-    backgroundColor: 'transparent',
-    paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.lg,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  secondaryButtonHovered: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.primary + '10',
-  },
-  secondaryButtonPressed: {
-    backgroundColor: Colors.primary + '20',
-    transform: [{ scale: 0.98 }],
-  },
-  secondaryButtonText: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.sm,
-    fontWeight: '600',
-    letterSpacing: 2,
-  },
-  footer: {
-    position: 'absolute',
-    bottom: Spacing.xxl,
-    fontSize: FontSize.xs,
-    color: Colors.textSecondary,
-    letterSpacing: 4,
-  },
-});

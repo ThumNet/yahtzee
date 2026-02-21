@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, SafeAreaView, Animated, Easing } from 'react-native';
 import { Confetti } from '../components/Confetti';
-import { Colors, Spacing, FontSize, BorderRadius, Glow } from '../utils/constants';
+import { Colors, Spacing, FontSize, BorderRadius } from '../utils/constants';
 import { saveHighScore, loadHighScores } from '../utils/storage';
 
 interface ResultsScreenProps {
@@ -10,72 +9,109 @@ interface ResultsScreenProps {
   onGoHome: () => void;
 }
 
+interface NeonButtonProps {
+  label: string;
+  onClick: () => void;
+  variant?: 'primary' | 'secondary';
+}
+
+function NeonButton({ label, onClick, variant = 'secondary' }: NeonButtonProps) {
+  const [hovered, setHovered] = useState(false);
+  const [pressed, setPressed] = useState(false);
+  const isPrimary = variant === 'primary';
+
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => { setHovered(false); setPressed(false); }}
+      onMouseDown={() => setPressed(true)}
+      onMouseUp={() => setPressed(false)}
+      style={{
+        backgroundColor: pressed
+          ? (isPrimary ? Colors.success + '30' : Colors.primary + '20')
+          : hovered
+          ? (isPrimary ? Colors.success + '15' : Colors.primary + '10')
+          : 'transparent',
+        paddingTop: isPrimary ? Spacing.lg : Spacing.md,
+        paddingBottom: isPrimary ? Spacing.lg : Spacing.md,
+        borderRadius: isPrimary ? BorderRadius.xl : BorderRadius.lg,
+        border: `${isPrimary ? 2 : 1}px solid ${hovered ? (isPrimary ? Colors.success : Colors.primary) : (isPrimary ? Colors.success : Colors.border)}`,
+        boxShadow: isPrimary ? `0 0 ${hovered ? 15 : 10}px ${Colors.success}` : 'none',
+        cursor: 'pointer',
+        transform: pressed ? 'scale(0.98)' : 'scale(1)',
+        transition: 'all 0.15s',
+        width: '100%',
+      }}
+    >
+      <span style={{
+        color: isPrimary ? Colors.success : Colors.textSecondary,
+        fontSize: isPrimary ? FontSize.lg : FontSize.md,
+        fontWeight: isPrimary ? 'bold' : '600',
+        letterSpacing: isPrimary ? 3 : 2,
+        textShadow: isPrimary ? `0 0 8px ${Colors.success}` : 'none',
+      }}>
+        {label}
+      </span>
+    </button>
+  );
+}
+
 export function ResultsScreen({ score, onPlayAgain, onGoHome }: ResultsScreenProps) {
   const [isNewHighScore, setIsNewHighScore] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [highScore, setHighScore] = useState(0);
-  const glowAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.5)).current;
-  const scoreAnim = useRef(new Animated.Value(0)).current;
+  const [scale, setScale] = useState(0.5);
+  const [displayScore, setDisplayScore] = useState(0);
+  const [glowIntensity, setGlowIntensity] = useState(0.5);
+  const animFrameRef = useRef<number | null>(null);
+  const startTimeRef = useRef<number | null>(null);
 
   useEffect(() => {
-    // Check and save high score
     const checkAndSaveScore = async () => {
       const scores = await loadHighScores();
       const currentHighScore = scores.length > 0 ? scores[0].score : 0;
       setHighScore(currentHighScore);
-      
       if (score > currentHighScore) {
         setIsNewHighScore(true);
-        // Trigger confetti for new high score
         setTimeout(() => setShowConfetti(true), 500);
       }
-      
-      // Save this score
-      await saveHighScore({
-        score,
-        date: new Date().toISOString(),
-        playerName: 'Player',
-      });
+      await saveHighScore({ score, date: new Date().toISOString(), playerName: 'Player' });
     };
-    
     checkAndSaveScore();
   }, [score]);
 
   useEffect(() => {
-    // Entrance animation
-    Animated.parallel([
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        tension: 50,
-        friction: 7,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scoreAnim, {
-        toValue: score,
-        duration: 1500,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: false,
-      }),
-    ]).start();
+    const duration = 1500;
+    const animate = (time: number) => {
+      if (startTimeRef.current === null) startTimeRef.current = time;
+      const elapsed = time - startTimeRef.current;
+      const p = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - p, 2);
+      setScale(0.5 + 0.5 * eased);
+      setDisplayScore(Math.round(score * eased));
+      if (p < 1) {
+        animFrameRef.current = requestAnimationFrame(animate);
+      }
+    };
+    animFrameRef.current = requestAnimationFrame(animate);
 
     // Continuous glow pulse
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(glowAnim, {
-          toValue: 1,
-          duration: 1500,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: false,
-        }),
-        Animated.timing(glowAnim, {
-          toValue: 0,
-          duration: 1500,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: false,
-        }),
-      ])
-    ).start();
+    let glowStart: number | null = null;
+    const glowAnimate = (time: number) => {
+      if (glowStart === null) glowStart = time;
+      const t = ((time - glowStart) % 3000) / 3000;
+      const glow = 0.5 + 0.5 * Math.sin(t * Math.PI * 2);
+      setGlowIntensity(glow);
+      animFrameRef.current = requestAnimationFrame(glowAnimate);
+    };
+    setTimeout(() => {
+      animFrameRef.current = requestAnimationFrame(glowAnimate);
+    }, duration);
+
+    return () => {
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+    };
   }, [score]);
 
   const getMessage = () => {
@@ -89,193 +125,87 @@ export function ResultsScreen({ score, onPlayAgain, onGoHome }: ResultsScreenPro
   };
 
   const message = getMessage();
-
-  const glowOpacity = glowAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.5, 1],
-  });
-
-  const glowRadius = glowAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [10, 25],
-  });
+  const glowRadius = 10 + 15 * glowIntensity;
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Confetti for new high score */}
+    <div style={{
+      flex: 1,
+      backgroundColor: Colors.background,
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100%',
+      position: 'relative',
+    }}>
       <Confetti active={showConfetti} onComplete={() => setShowConfetti(false)} />
-      
-      <View style={styles.content}>
-        <Text style={styles.gameOverText}>GAME OVER</Text>
-        
-        <Animated.View 
-          style={[
-            styles.scoreCard,
-            {
-              transform: [{ scale: scaleAnim }],
-            },
-          ]}
-        >
-          <Animated.Text 
-            style={[
-              styles.message,
-              { 
-                color: message.color,
-                textShadowColor: message.color,
-              },
-            ]}
-          >
+
+      <div style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: Spacing.xl,
+      }}>
+        <span style={{
+          fontSize: FontSize.xxl,
+          fontWeight: 'bold',
+          color: Colors.textSecondary,
+          marginBottom: Spacing.xl,
+          letterSpacing: 6,
+          display: 'block',
+        }}>
+          GAME OVER
+        </span>
+
+        <div style={{
+          backgroundColor: Colors.surface,
+          borderRadius: BorderRadius.xl,
+          padding: Spacing.xxl,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          marginBottom: Spacing.xxl,
+          minWidth: 280,
+          border: `2px solid ${Colors.primary}`,
+          boxShadow: `0 0 ${glowRadius}px ${Colors.primary}`,
+          transform: `scale(${scale})`,
+          transition: scale < 1 ? 'none' : 'box-shadow 0.1s',
+        }}>
+          <span style={{
+            fontSize: FontSize.xl,
+            fontWeight: 'bold',
+            marginBottom: Spacing.lg,
+            letterSpacing: 3,
+            color: message.color,
+            textShadow: `0 0 10px ${message.color}`,
+            display: 'block',
+          }}>
             {message.text}
-          </Animated.Text>
-          <Text style={styles.scoreLabel}>FINAL SCORE</Text>
-          <Animated.Text style={styles.score}>
-            {scoreAnim.interpolate({
-              inputRange: [0, score],
-              outputRange: ['0', score.toString()],
-              extrapolate: 'clamp',
-            })}
-          </Animated.Text>
+          </span>
+          <span style={{ fontSize: FontSize.sm, color: Colors.textSecondary, marginBottom: Spacing.sm, letterSpacing: 3, display: 'block' }}>
+            FINAL SCORE
+          </span>
+          <span style={{
+            fontSize: 72,
+            fontWeight: 'bold',
+            color: Colors.text,
+            textShadow: `0 0 15px ${Colors.primary}`,
+            display: 'block',
+          }}>
+            {displayScore}
+          </span>
           {!isNewHighScore && highScore > 0 && (
-            <Text style={styles.highScoreText}>HIGH SCORE: {highScore}</Text>
+            <span style={{ marginTop: Spacing.md, fontSize: FontSize.sm, color: Colors.textSecondary, letterSpacing: 2, display: 'block' }}>
+              HIGH SCORE: {highScore}
+            </span>
           )}
-        </Animated.View>
+        </div>
 
-        <View style={styles.buttonContainer}>
-          <Pressable 
-            style={({ hovered, pressed }) => [
-              styles.playAgainButton,
-              hovered && styles.playAgainButtonHovered,
-              pressed && styles.playAgainButtonPressed,
-            ]} 
-            onPress={onPlayAgain}
-          >
-            <Text style={styles.playAgainButtonText}>PLAY AGAIN</Text>
-          </Pressable>
-
-          <Pressable 
-            style={({ hovered, pressed }) => [
-              styles.homeButton,
-              hovered && styles.homeButtonHovered,
-              pressed && styles.homeButtonPressed,
-            ]} 
-            onPress={onGoHome}
-          >
-            <Text style={styles.homeButtonText}>HOME</Text>
-          </Pressable>
-        </View>
-      </View>
-    </SafeAreaView>
+        <div style={{ width: '100%', maxWidth: 300, display: 'flex', flexDirection: 'column', gap: Spacing.md }}>
+          <NeonButton label="PLAY AGAIN" onClick={onPlayAgain} variant="primary" />
+          <NeonButton label="HOME" onClick={onGoHome} />
+        </div>
+      </div>
+    </div>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: Spacing.xl,
-  },
-  gameOverText: {
-    fontSize: FontSize.xxl,
-    fontWeight: 'bold',
-    color: Colors.textSecondary,
-    marginBottom: Spacing.xl,
-    letterSpacing: 6,
-  },
-  scoreCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.xl,
-    padding: Spacing.xxl,
-    alignItems: 'center',
-    marginBottom: Spacing.xxl,
-    minWidth: 280,
-    borderWidth: 2,
-    borderColor: Colors.primary,
-    ...Glow.cyan,
-  },
-  message: {
-    fontSize: FontSize.xl,
-    fontWeight: 'bold',
-    marginBottom: Spacing.lg,
-    letterSpacing: 3,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 10,
-  },
-  scoreLabel: {
-    fontSize: FontSize.sm,
-    color: Colors.textSecondary,
-    marginBottom: Spacing.sm,
-    letterSpacing: 3,
-  },
-  score: {
-    fontSize: 72,
-    fontWeight: 'bold',
-    color: Colors.text,
-    textShadowColor: Colors.primary,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 15,
-  },
-  highScoreText: {
-    marginTop: Spacing.md,
-    fontSize: FontSize.sm,
-    color: Colors.textSecondary,
-    letterSpacing: 2,
-  },
-  buttonContainer: {
-    width: '100%',
-    maxWidth: 300,
-    gap: Spacing.md,
-  },
-  playAgainButton: {
-    backgroundColor: 'transparent',
-    paddingVertical: Spacing.lg,
-    borderRadius: BorderRadius.xl,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: Colors.success,
-    ...Glow.green,
-  },
-  playAgainButtonHovered: {
-    backgroundColor: Colors.success + '15',
-    shadowRadius: 15,
-  },
-  playAgainButtonPressed: {
-    backgroundColor: Colors.success + '30',
-    transform: [{ scale: 0.98 }],
-  },
-  playAgainButtonText: {
-    color: Colors.success,
-    fontSize: FontSize.lg,
-    fontWeight: 'bold',
-    letterSpacing: 3,
-    textShadowColor: Colors.success,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
-  },
-  homeButton: {
-    backgroundColor: 'transparent',
-    paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.lg,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  homeButtonHovered: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.primary + '10',
-  },
-  homeButtonPressed: {
-    backgroundColor: Colors.primary + '20',
-    transform: [{ scale: 0.98 }],
-  },
-  homeButtonText: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.md,
-    fontWeight: '600',
-    letterSpacing: 2,
-  },
-});

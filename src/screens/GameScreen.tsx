@@ -1,5 +1,4 @@
-import React, { useCallback, useState, useRef } from 'react';
-import { View, Text, Pressable, StyleSheet, SafeAreaView, useWindowDimensions, Platform } from 'react-native';
+import React, { useCallback, useState, useRef, useEffect } from 'react';
 import { DiceTray } from '../components/DiceTray';
 import { RollButton } from '../components/RollButton';
 import { Scorecard } from '../components/Scorecard';
@@ -10,8 +9,9 @@ import { useGameState } from '../hooks/useGameState';
 import { useHaptics } from '../hooks/useHaptics';
 import { useSound } from '../hooks/useSound';
 import { useKeyboard } from '../hooks/useKeyboard';
+import { useWindowDimensions } from '../hooks/useWindowDimensions';
 import { useSoundContext } from '../contexts/SoundContext';
-import { Colors, Spacing, FontSize, BorderRadius, Glow } from '../utils/constants';
+import { Colors, Spacing, FontSize, BorderRadius } from '../utils/constants';
 import { MAX_ROLLS, TOTAL_ROUNDS } from '../utils/constants';
 import { ScoreCategory, ALL_CATEGORIES } from '../types';
 import { calculatePotentialScore } from '../utils/scoring';
@@ -23,19 +23,162 @@ interface GameScreenProps {
 
 const WIDE_SCREEN_BREAKPOINT = 768;
 
+interface HeaderButtonProps {
+  label: string;
+  onClick: () => void;
+  color?: string;
+}
+
+function HeaderButton({ label, onClick, color = Colors.textSecondary }: HeaderButtonProps) {
+  const [hovered, setHovered] = useState(false);
+  const [pressed, setPressed] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => { setHovered(false); setPressed(false); }}
+      onMouseDown={() => setPressed(true)}
+      onMouseUp={() => setPressed(false)}
+      style={{
+        padding: Spacing.sm,
+        border: `1px solid ${hovered ? (color === Colors.error ? Colors.error : Colors.primary) : color}`,
+        borderRadius: BorderRadius.md,
+        backgroundColor: pressed ? (color + '40') : hovered ? (color + '20') : 'transparent',
+        cursor: 'pointer',
+        transform: pressed ? 'scale(0.95)' : 'scale(1)',
+        transition: 'all 0.1s',
+      }}
+    >
+      <span style={{ color, fontSize: FontSize.xs, fontWeight: 'bold', letterSpacing: 1 }}>
+        {label}
+      </span>
+    </button>
+  );
+}
+
+function QuitConfirmModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') { e.preventDefault(); onConfirm(); }
+      if (e.key === 'Escape') { e.preventDefault(); onCancel(); }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onConfirm, onCancel]);
+  return (
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      backgroundColor: 'rgba(0,0,0,0.75)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 200,
+    }}>
+      <div style={{
+        backgroundColor: Colors.surface,
+        border: `1px solid ${Colors.error}`,
+        borderRadius: BorderRadius.xl,
+        padding: Spacing.xl,
+        maxWidth: 320,
+        width: '90%',
+        boxShadow: `0 0 30px ${Colors.error}40`,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: Spacing.lg,
+      }}>
+        <span style={{ fontSize: FontSize.xl, fontWeight: 'bold', color: Colors.text, letterSpacing: 2 }}>
+          QUIT GAME?
+        </span>
+        <span style={{ fontSize: FontSize.sm, color: Colors.textSecondary, textAlign: 'center' }}>
+          Your progress will be lost.
+        </span>
+        <div style={{ display: 'flex', gap: Spacing.md, width: '100%' }}>
+          <button
+            onClick={onCancel}
+            style={{
+              flex: 1,
+              padding: Spacing.md,
+              backgroundColor: 'transparent',
+              border: `1px solid ${Colors.border}`,
+              borderRadius: BorderRadius.lg,
+              color: Colors.textSecondary,
+              fontSize: FontSize.sm,
+              fontWeight: 'bold',
+              letterSpacing: 2,
+              cursor: 'pointer',
+            }}
+          >
+            CANCEL
+          </button>
+          <button
+            onClick={onConfirm}
+            style={{
+              flex: 1,
+              padding: Spacing.md,
+              backgroundColor: Colors.error + '20',
+              border: `1px solid ${Colors.error}`,
+              borderRadius: BorderRadius.lg,
+              color: Colors.error,
+              fontSize: FontSize.sm,
+              fontWeight: 'bold',
+              letterSpacing: 2,
+              cursor: 'pointer',
+              boxShadow: `0 0 10px ${Colors.error}40`,
+            }}
+          >
+            QUIT
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HelpButton({ onClick }: { onClick: () => void }) {
+  const [hovered, setHovered] = useState(false);
+  const [pressed, setPressed] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => { setHovered(false); setPressed(false); }}
+      onMouseDown={() => setPressed(true)}
+      onMouseUp={() => setPressed(false)}
+      style={{
+        width: 32,
+        height: 32,
+        border: `1px solid ${Colors.primary}`,
+        borderRadius: 16,
+        backgroundColor: pressed ? Colors.primary + '40' : hovered ? Colors.primary + '20' : 'transparent',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        boxShadow: hovered ? `0 0 5px ${Colors.primary}` : 'none',
+        transform: pressed ? 'scale(0.95)' : 'scale(1)',
+        transition: 'all 0.1s',
+      }}
+    >
+      <span style={{ color: Colors.primary, fontSize: FontSize.md, fontWeight: 'bold' }}>?</span>
+    </button>
+  );
+}
+
 export function GameScreen({ onGameOver, onQuit }: GameScreenProps) {
   const { width } = useWindowDimensions();
   const isWideScreen = width >= WIDE_SCREEN_BREAKPOINT;
-  const { triggerMedium, triggerLight, triggerSuccess, triggerSelection } = useHaptics();
+  const { triggerMedium, triggerLight, triggerSuccess } = useHaptics();
   const { playRollSound, playSelectSound, playScoreSound, playYahtzeeSound } = useSound();
   const { isMuted, toggleMute } = useSoundContext();
 
-  // Score popup state
   const [popupScore, setPopupScore] = useState(0);
   const [showPopup, setShowPopup] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [selectedCategoryIndex, setSelectedCategoryIndex] = useState<number | null>(null);
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
+  const [showQuitConfirm, setShowQuitConfirm] = useState(false);
 
   const {
     gameState,
@@ -47,10 +190,8 @@ export function GameScreen({ onGameOver, onQuit }: GameScreenProps) {
     totalScore,
   } = useGameState();
 
-  // Check if current dice are a Yahtzee (all same value)
   const isYahtzee = gameState.dice.every(d => d.value === gameState.dice[0].value);
 
-  // Wrap rollDice with haptics and sound
   const handleRoll = useCallback(() => {
     triggerMedium();
     playRollSound();
@@ -58,34 +199,24 @@ export function GameScreen({ onGameOver, onQuit }: GameScreenProps) {
     setSelectedCategoryIndex(null);
   }, [rollDice, triggerMedium, playRollSound]);
 
-  // Wrap toggleHold with haptics and sound
   const handleToggleHold = useCallback((dieId: number) => {
     triggerLight();
     playSelectSound();
     toggleHold(dieId);
   }, [toggleHold, triggerLight, playSelectSound]);
 
-  // Wrap scoreCategory with haptics, sound, and animations
   const handleScoreCategory = useCallback((category: ScoreCategory) => {
-    // Get the score before it's applied
     const scoredPoints = calculatePotentialScore(gameState.dice, category);
-    
     triggerSuccess();
-    
-    // Check if this is a Yahtzee
     const scoringYahtzee = category === 'yahtzee' && isYahtzee && scoredPoints === 50;
-    
     if (scoringYahtzee) {
       playYahtzeeSound();
       setShowConfetti(true);
     } else {
       playScoreSound();
     }
-    
-    // Show score popup
     setPopupScore(scoredPoints);
     setShowPopup(true);
-    
     scoreCategory(category);
   }, [scoreCategory, triggerSuccess, playScoreSound, playYahtzeeSound, isYahtzee, gameState.dice]);
 
@@ -94,97 +225,76 @@ export function GameScreen({ onGameOver, onQuit }: GameScreenProps) {
     setPopupScore(0);
   }, []);
 
-  // Get available (unscored) categories for keyboard navigation
   const getAvailableCategories = useCallback(() => {
     return ALL_CATEGORIES.filter(cat => gameState.scorecard[cat] === null);
   }, [gameState.scorecard]);
 
   const canHoldDice = gameState.rollsLeft < MAX_ROLLS;
 
-  // Keyboard controls
   const handleKeyPress = useCallback((key: string) => {
     if (isRolling) return;
-
-    const availableCategories = getAvailableCategories();
-    
+    // ESC opens the quit confirm dialog (closing is handled by the dialog itself)
+    // But if the help modal is open, let it handle ESC instead
+    if (key === 'Escape') {
+      if (!showQuitConfirm && !showKeyboardHelp) setShowQuitConfirm(true);
+      return;
+    }
+    // Other keys are blocked while quit confirm is showing
+    if (showQuitConfirm) return;    const availableCategories = getAvailableCategories();
     switch (key) {
-      // Roll dice
       case ' ':
-        if (gameState.rollsLeft > 0) {
-          handleRoll();
-        }
+        if (gameState.rollsLeft > 0) handleRoll();
         break;
-      
-      // Confirm selected category
       case 'Enter':
         if (selectedCategoryIndex !== null && availableCategories.length > 0 && gameState.rollsLeft < MAX_ROLLS) {
           const category = availableCategories[selectedCategoryIndex];
-          if (category) {
-            handleScoreCategory(category);
-            setSelectedCategoryIndex(null);
-          }
+          if (category) { handleScoreCategory(category); setSelectedCategoryIndex(null); }
         }
         break;
-      
-      // Toggle dice hold (1-5 keys)
-      case '1':
-      case '2':
-      case '3':
-      case '4':
-      case '5':
-        if (canHoldDice) {
-          const dieIndex = parseInt(key) - 1;
-          handleToggleHold(dieIndex);
-        }
+      case '1': case '2': case '3': case '4': case '5':
+        if (canHoldDice) handleToggleHold(parseInt(key) - 1);
         break;
-      
-      // Navigate categories
       case 'ArrowUp':
         if (availableCategories.length > 0) {
-          setSelectedCategoryIndex(prev => {
-            if (prev === null || prev === 0) {
-              return availableCategories.length - 1;
-            }
-            return prev - 1;
-          });
+          setSelectedCategoryIndex(prev =>
+            prev === null || prev === 0 ? availableCategories.length - 1 : prev - 1
+          );
         }
         break;
-      
       case 'ArrowDown':
         if (availableCategories.length > 0) {
-          setSelectedCategoryIndex(prev => {
-            if (prev === null || prev >= availableCategories.length - 1) {
-              return 0;
-            }
-            return prev + 1;
-          });
+          setSelectedCategoryIndex(prev =>
+            prev === null || prev >= availableCategories.length - 1 ? 0 : prev + 1
+          );
         }
         break;
-      
-      // Mute toggle
-      case 'm':
-      case 'M':
+      case 'm': case 'M':
         toggleMute();
         break;
     }
-  }, [isRolling, gameState.rollsLeft, canHoldDice, selectedCategoryIndex, getAvailableCategories, handleRoll, handleToggleHold, handleScoreCategory, toggleMute]);
+  }, [isRolling, showQuitConfirm, showKeyboardHelp, gameState.rollsLeft, canHoldDice, selectedCategoryIndex, getAvailableCategories, handleRoll, handleToggleHold, handleScoreCategory, toggleMute]);
 
   useKeyboard(handleKeyPress, !gameState.isGameOver);
-
-  // Get the currently selected category for highlighting
-  const selectedCategory = selectedCategoryIndex !== null 
-    ? getAvailableCategories()[selectedCategoryIndex] 
+  const selectedCategory = selectedCategoryIndex !== null
+    ? getAvailableCategories()[selectedCategoryIndex]
     : null;
 
-  // Check if game is over
-  React.useEffect(() => {
+  useEffect(() => {
     if (gameState.isGameOver) {
       onGameOver(totalScore);
     }
   }, [gameState.isGameOver, totalScore, onGameOver]);
 
-  const renderDiceSection = () => (
-    <View style={[styles.diceSection, isWideScreen && styles.diceSectionWide]}>
+  const diceSection = (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      paddingTop: Spacing.lg,
+      paddingBottom: Spacing.lg,
+      backgroundColor: isWideScreen ? 'transparent' : Colors.surface,
+      borderBottom: isWideScreen ? 'none' : `1px solid ${Colors.border}`,
+    }}>
       <DiceTray
         dice={gameState.dice}
         onToggleHold={handleToggleHold}
@@ -196,18 +306,24 @@ export function GameScreen({ onGameOver, onQuit }: GameScreenProps) {
         rollsLeft={gameState.rollsLeft}
         disabled={gameState.rollsLeft <= 0 || isRolling}
       />
-      <Text style={styles.hintText}>
+      <span style={{ fontSize: FontSize.sm, color: Colors.textSecondary, marginTop: Spacing.md, letterSpacing: 1 }}>
         {!canHoldDice
           ? 'Roll the dice to start your turn'
           : canHoldDice && gameState.rollsLeft > 0
           ? 'Tap dice to hold, then roll or select a score'
           : 'Select a category to score'}
-      </Text>
-    </View>
+      </span>
+    </div>
   );
 
-  const renderScorecard = () => (
-    <View style={[styles.scorecardSection, isWideScreen && styles.scorecardSectionWide]}>
+  const scorecardSection = (
+    <div style={{
+      flex: 1,
+      padding: isWideScreen ? Spacing.lg : Spacing.md,
+      display: 'flex',
+      flexDirection: 'column',
+      overflow: 'hidden',
+    }}>
       <Scorecard
         scorecard={gameState.scorecard}
         onScoreCategory={handleScoreCategory}
@@ -216,243 +332,91 @@ export function GameScreen({ onGameOver, onQuit }: GameScreenProps) {
         totalScore={totalScore}
         selectedCategory={selectedCategory}
       />
-    </View>
+    </div>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Confetti overlay */}
+    <div style={{
+      flex: 1,
+      backgroundColor: Colors.background,
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100%',
+      position: 'relative',
+      overflow: 'hidden',
+    }}>
       <Confetti active={showConfetti} onComplete={() => setShowConfetti(false)} />
-      
-      {/* Score popup */}
       <ScorePopup score={popupScore} visible={showPopup} onComplete={handlePopupComplete} />
-
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Pressable 
-            onPress={onQuit} 
-            style={({ hovered, pressed }) => [
-              styles.quitButton,
-              hovered && styles.quitButtonHovered,
-              pressed && styles.quitButtonPressed,
-            ]}
-          >
-            <Text style={styles.quitButtonText}>QUIT</Text>
-          </Pressable>
-          <Pressable 
-            onPress={toggleMute} 
-            style={({ hovered, pressed }) => [
-              styles.muteButton,
-              hovered && styles.muteButtonHovered,
-              pressed && styles.muteButtonPressed,
-            ]}
-          >
-            <Text style={styles.muteButtonText}>{isMuted ? 'UNMUTE' : 'MUTE'}</Text>
-          </Pressable>
-          {Platform.OS === 'web' && (
-            <Pressable 
-              onPress={() => setShowKeyboardHelp(true)} 
-              style={({ hovered, pressed }) => [
-                styles.helpButton,
-                hovered && styles.helpButtonHovered,
-                pressed && styles.helpButtonPressed,
-              ]}
-            >
-              <Text style={styles.helpButtonText}>?</Text>
-            </Pressable>
-          )}
-        </View>
-        <View style={styles.roundContainer}>
-          <Text style={styles.roundLabel}>ROUND</Text>
-          <Text style={styles.roundText}>
-            {Math.min(gameState.currentRound, TOTAL_ROUNDS)}/{TOTAL_ROUNDS}
-          </Text>
-        </View>
-        <View style={styles.scoreDisplay}>
-          <Text style={styles.scoreLabel}>SCORE</Text>
-          <Text style={styles.scoreValue}>{totalScore}</Text>
-        </View>
-      </View>
-
-      {/* Main Content - responsive layout */}
-      {isWideScreen ? (
-        <View style={styles.wideContent}>
-          <View style={styles.leftPanel}>
-            {renderDiceSection()}
-          </View>
-          <View style={styles.rightPanel}>
-            {renderScorecard()}
-          </View>
-        </View>
-      ) : (
-        <>
-          {renderDiceSection()}
-          {renderScorecard()}
-        </>
+      {showQuitConfirm && (
+        <QuitConfirmModal
+          onConfirm={onQuit}
+          onCancel={() => setShowQuitConfirm(false)}
+        />
       )}
 
-      {/* Keyboard help modal */}
-      <KeyboardHelpModal 
-        visible={showKeyboardHelp} 
-        onClose={() => setShowKeyboardHelp(false)} 
-      />
-    </SafeAreaView>
+      {/* Header */}
+      <div style={{
+        display: 'flex',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingLeft: Spacing.md,
+        paddingRight: Spacing.md,
+        paddingTop: Spacing.sm,
+        paddingBottom: Spacing.sm,
+        backgroundColor: Colors.surface,
+        borderBottom: `1px solid ${Colors.border}`,
+        flexShrink: 0,
+      }}>
+        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+          <HeaderButton label="QUIT" onClick={() => setShowQuitConfirm(true)} color={Colors.error} />
+          <HeaderButton label={isMuted ? 'UNMUTE' : 'MUTE'} onClick={toggleMute} />
+          <HelpButton onClick={() => setShowKeyboardHelp(true)} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <span style={{ fontSize: FontSize.xs, color: Colors.textSecondary, letterSpacing: 2 }}>ROUND</span>
+          <span style={{ fontSize: FontSize.lg, fontWeight: 'bold', color: Colors.text }}>
+            {Math.min(gameState.currentRound, TOTAL_ROUNDS)}/{TOTAL_ROUNDS}
+          </span>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+          <span style={{ fontSize: FontSize.xs, color: Colors.textSecondary, letterSpacing: 2 }}>SCORE</span>
+          <span style={{
+            fontSize: FontSize.xl,
+            fontWeight: 'bold',
+            color: Colors.primary,
+            textShadow: `0 0 8px ${Colors.primary}`,
+          }}>
+            {totalScore}
+          </span>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      {isWideScreen ? (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'row', overflow: 'hidden' }}>
+          <div style={{
+            flex: 1,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: Colors.surface,
+            borderRight: `1px solid ${Colors.border}`,
+          }}>
+            {diceSection}
+          </div>
+          <div style={{ flex: 1, maxWidth: 500, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            {scorecardSection}
+          </div>
+        </div>
+      ) : (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {diceSection}
+          {scorecardSection}
+        </div>
+      )}
+
+      <KeyboardHelpModal visible={showKeyboardHelp} onClose={() => setShowKeyboardHelp(false)} />
+    </div>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    backgroundColor: Colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  quitButton: {
-    padding: Spacing.sm,
-    borderWidth: 1,
-    borderColor: Colors.error,
-    borderRadius: BorderRadius.md,
-  },
-  quitButtonHovered: {
-    backgroundColor: Colors.error + '20',
-  },
-  quitButtonPressed: {
-    backgroundColor: Colors.error + '40',
-    transform: [{ scale: 0.95 }],
-  },
-  quitButtonText: {
-    color: Colors.error,
-    fontSize: FontSize.xs,
-    fontWeight: 'bold',
-    letterSpacing: 1,
-  },
-  muteButton: {
-    padding: Spacing.sm,
-    borderWidth: 1,
-    borderColor: Colors.textSecondary,
-    borderRadius: BorderRadius.md,
-  },
-  muteButtonHovered: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.primary + '10',
-  },
-  muteButtonPressed: {
-    backgroundColor: Colors.primary + '30',
-    transform: [{ scale: 0.95 }],
-  },
-  muteButtonText: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.xs,
-    fontWeight: 'bold',
-    letterSpacing: 1,
-  },
-  helpButton: {
-    width: 32,
-    height: 32,
-    borderWidth: 1,
-    borderColor: Colors.primary,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  helpButtonHovered: {
-    backgroundColor: Colors.primary + '20',
-    ...Glow.subtle,
-  },
-  helpButtonPressed: {
-    backgroundColor: Colors.primary + '40',
-    transform: [{ scale: 0.95 }],
-  },
-  helpButtonText: {
-    color: Colors.primary,
-    fontSize: FontSize.md,
-    fontWeight: 'bold',
-  },
-  roundContainer: {
-    alignItems: 'center',
-  },
-  roundLabel: {
-    fontSize: FontSize.xs,
-    color: Colors.textSecondary,
-    letterSpacing: 2,
-  },
-  roundText: {
-    fontSize: FontSize.lg,
-    fontWeight: 'bold',
-    color: Colors.text,
-  },
-  scoreDisplay: {
-    alignItems: 'flex-end',
-  },
-  scoreLabel: {
-    fontSize: FontSize.xs,
-    color: Colors.textSecondary,
-    letterSpacing: 2,
-  },
-  scoreValue: {
-    fontSize: FontSize.xl,
-    fontWeight: 'bold',
-    color: Colors.primary,
-    textShadowColor: Colors.primary,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
-  },
-  // Mobile layout
-  diceSection: {
-    alignItems: 'center',
-    paddingVertical: Spacing.lg,
-    backgroundColor: Colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  hintText: {
-    fontSize: FontSize.sm,
-    color: Colors.textSecondary,
-    marginTop: Spacing.md,
-    letterSpacing: 1,
-  },
-  scorecardSection: {
-    flex: 1,
-    padding: Spacing.md,
-  },
-  // Wide screen layout
-  wideContent: {
-    flex: 1,
-    flexDirection: 'row',
-  },
-  leftPanel: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: Colors.surface,
-    borderRightWidth: 1,
-    borderRightColor: Colors.border,
-  },
-  rightPanel: {
-    flex: 1,
-    maxWidth: 500,
-  },
-  diceSectionWide: {
-    borderBottomWidth: 0,
-    paddingVertical: Spacing.xxl,
-    backgroundColor: 'transparent',
-  },
-  scorecardSectionWide: {
-    flex: 1,
-    padding: Spacing.lg,
-  },
-});

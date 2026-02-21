@@ -1,5 +1,4 @@
-import React, { useEffect, useRef } from 'react';
-import { Platform, View, StyleSheet, Animated, Easing } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
 import { Logo } from '../components/Logo';
 import { Colors } from '../utils/constants';
 
@@ -8,100 +7,80 @@ interface SplashScreenProps {
 }
 
 export function SplashScreen({ onFinish }: SplashScreenProps) {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.8)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-
-  // Faster transition on web
-  const SPLASH_DURATION = Platform.OS === 'web' ? 1200 : 2500;
+  const [opacity, setOpacity] = useState(0);
+  const [scale, setScale] = useState(0.8);
+  const animFrameRef = useRef<number | null>(null);
+  const startTimeRef = useRef<number | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    // Entrance animation
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }),
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        tension: 50,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    // Entrance animation over 800ms
+    const enterDuration = 800;
+    const animate = (time: number) => {
+      if (startTimeRef.current === null) startTimeRef.current = time;
+      const elapsed = time - startTimeRef.current;
+      const p = Math.min(elapsed / enterDuration, 1);
+      const eased = 1 - Math.pow(1 - p, 2); // ease out quad
+      setOpacity(eased);
+      setScale(0.8 + 0.2 * eased);
+      if (p < 1) {
+        animFrameRef.current = requestAnimationFrame(animate);
+      }
+    };
+    animFrameRef.current = requestAnimationFrame(animate);
 
-    // Pulse animation
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.02,
-          duration: 1500,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 1500,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
+    // Auto-transition after 1200ms
+    timerRef.current = setTimeout(() => {
+      // Fade out
+      const fadeStart = performance.now();
+      const fadeDuration = 400;
+      const fadeOut = (time: number) => {
+        const elapsed = time - fadeStart;
+        const p = Math.min(elapsed / fadeDuration, 1);
+        setOpacity(1 - p);
+        if (p < 1) {
+          requestAnimationFrame(fadeOut);
+        } else {
+          onFinish();
+        }
+      };
+      requestAnimationFrame(fadeOut);
+    }, 1200);
 
-    // Auto-transition after delay
-    const timer = setTimeout(() => {
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 400,
-        useNativeDriver: true,
-      }).start(() => {
-        onFinish();
-      });
-    }, SPLASH_DURATION);
-
-    return () => clearTimeout(timer);
+    return () => {
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, []);
 
   return (
-    <View style={styles.container}>
-      <Animated.View
-        style={[
-          styles.logoContainer,
-          {
-            opacity: fadeAnim,
-            transform: [
-              { scale: Animated.multiply(scaleAnim, pulseAnim) },
-            ],
-          },
-        ]}
-      >
+    <div style={{
+      flex: 1,
+      backgroundColor: Colors.background,
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      flexDirection: 'column',
+      height: '100%',
+      position: 'relative',
+    }}>
+      <div style={{
+        opacity,
+        transform: `scale(${scale})`,
+        marginBottom: 60,
+      }}>
         <Logo size="splash" />
-      </Animated.View>
-      
-      <Animated.Text style={[styles.loadingText, { opacity: fadeAnim }]}>
+      </div>
+      <span style={{
+        position: 'absolute',
+        bottom: 80,
+        color: Colors.textSecondary,
+        fontSize: 12,
+        letterSpacing: 6,
+        opacity,
+      }}>
         LOADING...
-      </Animated.Text>
-    </View>
+      </span>
+    </div>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoContainer: {
-    marginBottom: 60,
-  },
-  loadingText: {
-    position: 'absolute',
-    bottom: 80,
-    color: Colors.textSecondary,
-    fontSize: 12,
-    letterSpacing: 6,
-  },
-});

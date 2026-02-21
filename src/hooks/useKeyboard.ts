@@ -1,12 +1,11 @@
 import { useEffect, useCallback } from 'react';
-import { Platform } from 'react-native';
 
 type KeyHandler = (key: string) => void;
 
 export function useKeyboard(onKeyPress: KeyHandler, enabled: boolean = true) {
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     if (!enabled) return;
-    
+
     // Ignore if user is typing in an input field
     if (
       event.target instanceof HTMLInputElement ||
@@ -25,9 +24,6 @@ export function useKeyboard(onKeyPress: KeyHandler, enabled: boolean = true) {
   }, [onKeyPress, enabled]);
 
   useEffect(() => {
-    // Only add keyboard listeners on web
-    if (Platform.OS !== 'web') return;
-
     window.addEventListener('keydown', handleKeyDown);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);

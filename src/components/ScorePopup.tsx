@@ -1,6 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, Text, StyleSheet, View } from 'react-native';
-import { Colors, FontSize } from '../utils/constants';
+import React, { useEffect, useRef, useState } from 'react';
+import { Colors } from '../utils/constants';
 
 interface ScorePopupProps {
   score: number;
@@ -9,84 +8,57 @@ interface ScorePopupProps {
 }
 
 export function ScorePopup({ score, visible, onComplete }: ScorePopupProps) {
-  const translateY = useRef(new Animated.Value(0)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(0.5)).current;
+  const [animState, setAnimState] = useState<'hidden' | 'entering' | 'visible' | 'exiting'>('hidden');
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (visible && score > 0) {
-      // Reset
-      translateY.setValue(0);
-      opacity.setValue(1);
-      scale.setValue(0.5);
-
-      // Animate
-      Animated.parallel([
-        Animated.timing(translateY, {
-          toValue: -60,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-        Animated.sequence([
-          Animated.spring(scale, {
-            toValue: 1.2,
-            tension: 100,
-            friction: 8,
-            useNativeDriver: true,
-          }),
-          Animated.timing(scale, {
-            toValue: 1,
-            duration: 200,
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.sequence([
-          Animated.delay(400),
-          Animated.timing(opacity, {
-            toValue: 0,
-            duration: 400,
-            useNativeDriver: true,
-          }),
-        ]),
-      ]).start(() => {
-        onComplete?.();
-      });
+      setAnimState('entering');
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => {
+        setAnimState('exiting');
+        timerRef.current = setTimeout(() => {
+          setAnimState('hidden');
+          onComplete?.();
+        }, 400);
+      }, 500);
     }
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, [visible, score]);
 
-  if (!visible || score === 0) return null;
+  if (animState === 'hidden' || score === 0) return null;
+
+  const opacity = animState === 'exiting' ? 0 : 1;
+  const transform = animState === 'entering' ? 'translateY(0) scale(1.2)' :
+                    animState === 'visible' ? 'translateY(-20px) scale(1)' :
+                    'translateY(-60px) scale(1)';
 
   return (
-    <Animated.View
-      style={[
-        styles.container,
-        {
-          transform: [{ translateY }, { scale }],
-          opacity,
-        },
-      ]}
-      pointerEvents="none"
+    <div
+      style={{
+        position: 'absolute',
+        top: '40%',
+        left: 0,
+        right: 0,
+        display: 'flex',
+        justifyContent: 'center',
+        zIndex: 100,
+        pointerEvents: 'none',
+        opacity,
+        transform,
+        transition: animState === 'exiting' ? 'opacity 0.4s ease, transform 0.4s ease' : 'transform 0.3s ease',
+      }}
     >
-      <Text style={styles.text}>+{score}</Text>
-    </Animated.View>
+      <span style={{
+        fontSize: 48,
+        fontWeight: 'bold',
+        color: Colors.success,
+        textShadow: `0 0 20px ${Colors.success}`,
+      }}>
+        +{score}
+      </span>
+    </div>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    top: '40%',
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    zIndex: 100,
-  },
-  text: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: Colors.success,
-    textShadowColor: Colors.success,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 20,
-  },
-});

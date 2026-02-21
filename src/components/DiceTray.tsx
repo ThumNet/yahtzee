@@ -1,5 +1,4 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
 import { Die as DieType } from '../types';
 import { Dice } from './Dice';
 import { Spacing } from '../utils/constants';
@@ -13,7 +12,17 @@ interface DiceTrayProps {
 
 export function DiceTray({ dice, onToggleHold, disabled = false, isRolling = false }: DiceTrayProps) {
   return (
-    <View style={styles.container}>
+    <div style={{
+      display: 'flex',
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: Spacing.md,
+      paddingTop: Spacing.xl,
+      paddingBottom: Spacing.xl,
+      paddingLeft: Spacing.md,
+      paddingRight: Spacing.md,
+    }}>
       {dice.map((die) => (
         <Dice
           key={die.id}
@@ -23,17 +32,6 @@ export function DiceTray({ dice, onToggleHold, disabled = false, isRolling = fal
           isRolling={isRolling}
         />
       ))}
-    </View>
+    </div>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: Spacing.md,
-    paddingVertical: Spacing.xl,
-    paddingHorizontal: Spacing.md,
-  },
-});

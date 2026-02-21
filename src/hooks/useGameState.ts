@@ -34,21 +34,18 @@ const ROLL_ANIMATION_DURATION = 400;
 export function useGameState() {
   const [gameState, setGameState] = useState<GameState>(createInitialGameState());
   const [isRolling, setIsRolling] = useState(false);
-  const rollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const rollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Roll the dice
   const rollDice = useCallback(() => {
     if (gameState.rollsLeft <= 0 || isRolling) return;
 
-    // Start rolling animation
     setIsRolling(true);
 
-    // Clear any existing timeout
     if (rollTimeoutRef.current) {
       clearTimeout(rollTimeoutRef.current);
     }
 
-    // Update dice values
     setGameState((prev) => ({
       ...prev,
       dice: prev.dice.map((die) =>
@@ -57,7 +54,6 @@ export function useGameState() {
       rollsLeft: prev.rollsLeft - 1,
     }));
 
-    // Stop rolling animation after duration
     rollTimeoutRef.current = setTimeout(() => {
       setIsRolling(false);
     }, ROLL_ANIMATION_DURATION);
@@ -65,8 +61,8 @@ export function useGameState() {
 
   // Toggle hold on a die
   const toggleHold = useCallback((dieId: number) => {
-    if (isRolling) return; // Don't allow hold toggle during roll
-    
+    if (isRolling) return;
+
     setGameState((prev) => ({
       ...prev,
       dice: prev.dice.map((die) =>
@@ -78,15 +74,14 @@ export function useGameState() {
   // Score a category
   const scoreCategory = useCallback((category: ScoreCategory) => {
     if (gameState.scorecard[category] !== null) return;
-    if (gameState.rollsLeft === MAX_ROLLS) return; // Must roll at least once
-    if (isRolling) return; // Don't allow scoring during roll
+    if (gameState.rollsLeft === MAX_ROLLS) return;
+    if (isRolling) return;
 
     const score = calculatePotentialScore(gameState.dice, category);
-    
-    // Check for Yahtzee bonus
+
     let yahtzeeBonus = gameState.yahtzeeBonus;
     const isYahtzee = gameState.dice.every((d) => d.value === gameState.dice[0].value);
-    
+
     if (isYahtzee && gameState.scorecard.yahtzee === YAHTZEE_POINTS) {
       yahtzeeBonus += YAHTZEE_BONUS_POINTS;
     }
@@ -129,7 +124,6 @@ export function useGameState() {
     setGameState(createInitialGameState());
   }, []);
 
-  // Calculate total score
   const totalScore = calculateGrandTotal(gameState.scorecard, gameState.yahtzeeBonus);
 
   return {

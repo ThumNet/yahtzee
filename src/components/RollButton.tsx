@@ -1,6 +1,5 @@
-import React from 'react';
-import { Pressable, Text, StyleSheet, View } from 'react-native';
-import { Colors, BorderRadius, Spacing, FontSize, Glow } from '../utils/constants';
+import React, { useState } from 'react';
+import { Colors, BorderRadius, Spacing, FontSize } from '../utils/constants';
 
 interface RollButtonProps {
   onRoll: () => void;
@@ -10,110 +9,80 @@ interface RollButtonProps {
 
 export function RollButton({ onRoll, rollsLeft, disabled = false }: RollButtonProps) {
   const isDisabled = disabled || rollsLeft <= 0;
+  const [hovered, setHovered] = useState(false);
+  const [pressed, setPressed] = useState(false);
+
+  const getBorderColor = () => {
+    if (isDisabled) return Colors.border;
+    return Colors.primary;
+  };
+
+  const getBackground = () => {
+    if (isDisabled) return 'transparent';
+    if (pressed) return Colors.primary + '40';
+    if (hovered) return Colors.primary + '20';
+    return 'transparent';
+  };
+
+  const getBoxShadow = () => {
+    if (isDisabled) return 'none';
+    if (hovered) return `0 0 15px ${Colors.primary}`;
+    return `0 0 10px ${Colors.primary}`;
+  };
 
   return (
-    <View style={styles.container}>
-      <Pressable
-        onPress={onRoll}
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: Spacing.sm }}>
+      <button
+        onClick={onRoll}
         disabled={isDisabled}
-        style={({ hovered, pressed }) => [
-          styles.button,
-          isDisabled ? styles.buttonDisabled : styles.buttonActive,
-          hovered && !isDisabled && styles.buttonHovered,
-          pressed && !isDisabled && styles.buttonPressed,
-        ]}
+        onMouseEnter={() => !isDisabled && setHovered(true)}
+        onMouseLeave={() => { setHovered(false); setPressed(false); }}
+        onMouseDown={() => !isDisabled && setPressed(true)}
+        onMouseUp={() => setPressed(false)}
+        style={{
+          paddingTop: Spacing.md,
+          paddingBottom: Spacing.md,
+          paddingLeft: Spacing.xxl + 16,
+          paddingRight: Spacing.xxl + 16,
+          borderRadius: BorderRadius.xl,
+          border: `2px solid ${getBorderColor()}`,
+          backgroundColor: getBackground(),
+          boxShadow: getBoxShadow(),
+          cursor: isDisabled ? 'not-allowed' : 'pointer',
+          transform: pressed ? 'scale(0.98)' : 'scale(1)',
+          transition: 'all 0.15s',
+        }}
       >
-        <Text style={[styles.buttonText, isDisabled && styles.buttonTextDisabled]}>
+        <span style={{
+          color: isDisabled ? Colors.textSecondary : Colors.primary,
+          fontSize: FontSize.xl,
+          fontWeight: 'bold',
+          letterSpacing: 4,
+          textShadow: isDisabled ? 'none' : `0 0 10px ${Colors.primary}`,
+        }}>
           ROLL
-        </Text>
-      </Pressable>
-      <View style={styles.rollsContainer}>
+        </span>
+      </button>
+
+      <div style={{ display: 'flex', flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.xs }}>
         {[0, 1, 2].map((i) => (
-          <View
+          <div
             key={i}
-            style={[
-              styles.rollIndicator,
-              i < rollsLeft ? styles.rollIndicatorActive : styles.rollIndicatorUsed,
-            ]}
+            style={{
+              width: 12,
+              height: 12,
+              borderRadius: 6,
+              border: `2px solid ${i < rollsLeft ? Colors.primary : Colors.border}`,
+              backgroundColor: i < rollsLeft ? Colors.primary : 'transparent',
+              boxShadow: i < rollsLeft ? `0 0 6px ${Colors.primary}` : 'none',
+            }}
           />
         ))}
-      </View>
-      <Text style={styles.rollsText}>
+      </div>
+
+      <span style={{ fontSize: FontSize.sm, color: Colors.textSecondary, letterSpacing: 1 }}>
         {rollsLeft} roll{rollsLeft !== 1 ? 's' : ''} left
-      </Text>
-    </View>
+      </span>
+    </div>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  button: {
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.xxl + 16,
-    borderRadius: BorderRadius.xl,
-    borderWidth: 2,
-  },
-  buttonActive: {
-    backgroundColor: 'transparent',
-    borderColor: Colors.primary,
-    ...Glow.cyan,
-  },
-  buttonHovered: {
-    backgroundColor: Colors.primary + '20',
-    borderColor: Colors.primary,
-    shadowRadius: 15,
-  },
-  buttonPressed: {
-    backgroundColor: Colors.primary + '40',
-    transform: [{ scale: 0.98 }],
-  },
-  buttonDisabled: {
-    backgroundColor: 'transparent',
-    borderColor: Colors.border,
-  },
-  buttonText: {
-    color: Colors.primary,
-    fontSize: FontSize.xl,
-    fontWeight: 'bold',
-    letterSpacing: 4,
-    textShadowColor: Colors.primary,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 10,
-  },
-  buttonTextDisabled: {
-    color: Colors.textSecondary,
-    textShadowRadius: 0,
-  },
-  rollsContainer: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    marginTop: Spacing.xs,
-  },
-  rollIndicator: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    borderWidth: 2,
-  },
-  rollIndicatorActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 6,
-    elevation: 6,
-  },
-  rollIndicatorUsed: {
-    backgroundColor: 'transparent',
-    borderColor: Colors.border,
-  },
-  rollsText: {
-    fontSize: FontSize.sm,
-    color: Colors.textSecondary,
-    letterSpacing: 1,
-  },
-});

@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, ReactNode } from 'react';
-import { Animated, StyleSheet, View, Easing } from 'react-native';
 import { Colors } from '../utils/constants';
 
 interface ScreenManagerProps {
@@ -11,99 +10,74 @@ interface ScreenManagerProps {
 export function ScreenManager({ screenKey, children, duration = 300 }: ScreenManagerProps) {
   const [currentScreen, setCurrentScreen] = useState<ReactNode>(children);
   const [previousScreen, setPreviousScreen] = useState<ReactNode>(null);
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  
-  const anim = useRef(new Animated.Value(1)).current;
+  const [progress, setProgress] = useState(1);
   const prevKeyRef = useRef(screenKey);
+  const animFrameRef = useRef<number | null>(null);
+  const startTimeRef = useRef<number | null>(null);
 
   useEffect(() => {
-    // If the screen key changed, start transition
     if (screenKey !== prevKeyRef.current) {
-      setIsTransitioning(true);
       setPreviousScreen(currentScreen);
-      
-      // Start from 0
-      anim.setValue(0);
-      
-      // Update to new screen
       setCurrentScreen(children);
-      
-      // Animate to 1
-      Animated.timing(anim, {
-        toValue: 1,
-        duration,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }).start(() => {
-        setIsTransitioning(false);
-        setPreviousScreen(null);
-      });
-      
+      setProgress(0);
+      startTimeRef.current = null;
+
+      const animate = (time: number) => {
+        if (startTimeRef.current === null) startTimeRef.current = time;
+        const elapsed = time - startTimeRef.current;
+        const p = Math.min(elapsed / duration, 1);
+        // ease out cubic
+        const eased = 1 - Math.pow(1 - p, 3);
+        setProgress(eased);
+        if (p < 1) {
+          animFrameRef.current = requestAnimationFrame(animate);
+        } else {
+          setPreviousScreen(null);
+        }
+      };
+      animFrameRef.current = requestAnimationFrame(animate);
       prevKeyRef.current = screenKey;
     } else {
-      // Same screen, just update children
       setCurrentScreen(children);
     }
+    return () => {
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+    };
   }, [screenKey, children, duration]);
 
-  // Zoom: new screen scales from 0.85 to 1, old screen scales from 1 to 1.1
-  const newScreenScale = anim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.85, 1],
-  });
-
-  const oldScreenScale = anim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 1.1],
-  });
-
-  const newScreenOpacity = anim;
-
-  const oldScreenOpacity = anim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 0],
-  });
+  const newScale = 0.85 + 0.15 * progress;
+  const oldScale = 1 + 0.1 * progress;
+  const newOpacity = progress;
+  const oldOpacity = 1 - progress;
 
   return (
-    <View style={styles.container}>
-      {/* Previous screen (zooming out) */}
-      {isTransitioning && previousScreen && (
-        <Animated.View 
-          style={[
-            styles.screen, 
-            { 
-              opacity: oldScreenOpacity,
-              transform: [{ scale: oldScreenScale }],
-            }
-          ]}
-          pointerEvents="none"
-        >
+    <div style={{
+      flex: 1,
+      position: 'relative',
+      backgroundColor: Colors.background,
+      width: '100%',
+      height: '100%',
+      overflow: 'hidden',
+    }}>
+      {previousScreen && (
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          opacity: oldOpacity,
+          transform: `scale(${oldScale})`,
+          pointerEvents: 'none',
+        }}>
           {previousScreen}
-        </Animated.View>
+        </div>
       )}
-      
-      {/* Current screen (zooming in) */}
-      <Animated.View 
-        style={[
-          styles.screen, 
-          { 
-            opacity: newScreenOpacity,
-            transform: [{ scale: newScreenScale }],
-          }
-        ]}
-      >
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        opacity: newOpacity,
+        transform: `scale(${newScale})`,
+      }}>
         {currentScreen}
-      </Animated.View>
-    </View>
+      </div>
+    </div>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  screen: {
-    ...StyleSheet.absoluteFillObject,
-  },
-});
