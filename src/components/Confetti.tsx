@@ -86,7 +86,7 @@ export function Confetti({ active, onComplete }: ConfettiProps) {
             borderRadius: 2,
             boxShadow: `0 0 4px ${piece.color}`,
             animation: `confetti-fall ${piece.duration}s ${piece.delay}s linear forwards`,
-            '--drift': `${piece.horizontalDrift}px`,
+            '--drift': `${piece.horizontalDrift}`,
           } as React.CSSProperties}
         />
       ))}

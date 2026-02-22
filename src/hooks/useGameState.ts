@@ -130,6 +130,22 @@ export function useGameState() {
     setGameState(createInitialGameState());
   }, []);
 
+  // Dev only: force all dice to the same value and consume a roll
+  const forceYahtzee = useCallback(() => {
+    if (gameState.rollsLeft <= 0) return;
+    if (rollTimeoutRef.current) clearTimeout(rollTimeoutRef.current);
+    setIsRolling(true);
+    const value = Math.floor(Math.random() * 6) + 1;
+    setGameState((prev) => ({
+      ...prev,
+      dice: prev.dice.map((die) => ({ ...die, value, isHeld: false })),
+      rollsLeft: prev.rollsLeft - 1,
+    }));
+    rollTimeoutRef.current = setTimeout(() => {
+      setIsRolling(false);
+    }, ROLL_ANIMATION_DURATION);
+  }, [gameState.rollsLeft]);
+
   const totalScore = calculateGrandTotal(gameState.scorecard, gameState.yahtzeeBonus);
 
   return {
@@ -140,6 +156,7 @@ export function useGameState() {
     scoreCategory,
     getPotentialScore,
     resetGame,
+    forceYahtzee,
     totalScore,
   };
 }

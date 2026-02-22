@@ -12,7 +12,7 @@ import { useKeyboard } from '../hooks/useKeyboard';
 import { useWindowDimensions } from '../hooks/useWindowDimensions';
 import { useSoundContext } from '../contexts/SoundContext';
 import { Colors, Spacing, FontSize, BorderRadius } from '../utils/constants';
-import { MAX_ROLLS, TOTAL_ROUNDS } from '../utils/constants';
+import { MAX_ROLLS, TOTAL_ROUNDS, YAHTZEE_BONUS_POINTS, YAHTZEE_POINTS } from '../utils/constants';
 import { ScoreCategory, ALL_CATEGORIES } from '../types';
 import { calculatePotentialScore } from '../utils/scoring';
 
@@ -175,6 +175,8 @@ export function GameScreen({ onGameOver, onQuit }: GameScreenProps) {
 
   const [popupScore, setPopupScore] = useState(0);
   const [showPopup, setShowPopup] = useState(false);
+  const [bonusPopupVisible, setBonusPopupVisible] = useState(false);
+  const bonusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const [selectedCategoryIndex, setSelectedCategoryIndex] = useState<number | null>(null);
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
@@ -187,6 +189,7 @@ export function GameScreen({ onGameOver, onQuit }: GameScreenProps) {
     toggleHold,
     scoreCategory,
     getPotentialScore,
+    forceYahtzee,
     totalScore,
   } = useGameState();
 
@@ -208,17 +211,28 @@ export function GameScreen({ onGameOver, onQuit }: GameScreenProps) {
   const handleScoreCategory = useCallback((category: ScoreCategory) => {
     const scoredPoints = calculatePotentialScore(gameState.dice, category);
     triggerSuccess();
-    const scoringYahtzee = category === 'yahtzee' && isYahtzee && scoredPoints === 50;
+    const scoringYahtzee = isYahtzee && gameState.rollsLeft < MAX_ROLLS;
+    const isYahtzeeBonus = scoringYahtzee && gameState.scorecard.yahtzee === YAHTZEE_POINTS;
     if (scoringYahtzee) {
       playYahtzeeSound();
-      setShowConfetti(true);
+      if (!isYahtzeeBonus) {
+        setShowConfetti(true);
+      }
     } else {
       playScoreSound();
     }
     setPopupScore(scoredPoints);
     setShowPopup(true);
+    if (isYahtzeeBonus) {
+      // Fire +100 popup and confetti as the first popup starts exiting (after its 500ms visible phase)
+      if (bonusTimerRef.current) clearTimeout(bonusTimerRef.current);
+      bonusTimerRef.current = setTimeout(() => {
+        setBonusPopupVisible(true);
+        setShowConfetti(true);
+      }, 500);
+    }
     scoreCategory(category);
-  }, [scoreCategory, triggerSuccess, playScoreSound, playYahtzeeSound, isYahtzee, gameState.dice]);
+  }, [scoreCategory, triggerSuccess, playScoreSound, playYahtzeeSound, isYahtzee, gameState.dice, gameState.rollsLeft, gameState.scorecard.yahtzee]);
 
   const handlePopupComplete = useCallback(() => {
     setShowPopup(false);
@@ -350,6 +364,7 @@ export function GameScreen({ onGameOver, onQuit }: GameScreenProps) {
     }}>
       <Confetti active={showConfetti} onComplete={() => setShowConfetti(false)} />
       <ScorePopup score={popupScore} visible={showPopup} onComplete={handlePopupComplete} />
+      <ScorePopup score={YAHTZEE_BONUS_POINTS} visible={bonusPopupVisible} onComplete={() => setBonusPopupVisible(false)} topPercent={52} />
       {showQuitConfirm && (
         <QuitConfirmModal
           onConfirm={onQuit}
@@ -375,6 +390,9 @@ export function GameScreen({ onGameOver, onQuit }: GameScreenProps) {
           <HeaderButton label="QUIT" onClick={() => setShowQuitConfirm(true)} color={Colors.error} />
           <HeaderButton label={isMuted ? 'UNMUTE' : 'MUTE'} onClick={toggleMute} />
           <HelpButton onClick={() => setShowKeyboardHelp(true)} />
+          {import.meta.env.DEV && (
+            <HeaderButton label="YAHTZEE!" onClick={forceYahtzee} color={Colors.accent} />
+          )}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <span style={{ fontSize: FontSize.xs, color: Colors.textSecondary, letterSpacing: 2 }}>ROUND</span>

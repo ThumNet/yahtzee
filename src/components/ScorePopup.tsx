@@ -5,9 +5,10 @@ interface ScorePopupProps {
   score: number;
   visible: boolean;
   onComplete?: () => void;
+  topPercent?: number;
 }
 
-export function ScorePopup({ score, visible, onComplete }: ScorePopupProps) {
+export function ScorePopup({ score, visible, onComplete, topPercent = 40 }: ScorePopupProps) {
   const [animState, setAnimState] = useState<'hidden' | 'entering' | 'visible' | 'exiting'>('hidden');
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -39,7 +40,7 @@ export function ScorePopup({ score, visible, onComplete }: ScorePopupProps) {
     <div
       style={{
         position: 'absolute',
-        top: '40%',
+        top: `${topPercent}%`,
         left: 0,
         right: 0,
         display: 'flex',
