@@ -229,7 +229,7 @@ export function GameScreen({ onGameOver, onQuit }: GameScreenProps) {
     return ALL_CATEGORIES.filter(cat => gameState.scorecard[cat] === null);
   }, [gameState.scorecard]);
 
-  const canHoldDice = gameState.rollsLeft < MAX_ROLLS;
+  const canHoldDice = gameState.rollsLeft < MAX_ROLLS && gameState.rollsLeft > 0;
 
   const handleKeyPress = useCallback((key: string) => {
     if (isRolling) return;

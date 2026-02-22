@@ -75,7 +75,13 @@ export function useGameState() {
   const scoreCategory = useCallback((category: ScoreCategory) => {
     if (gameState.scorecard[category] !== null) return;
     if (gameState.rollsLeft === MAX_ROLLS) return;
-    if (isRolling) return;
+
+    // Cancel any in-flight roll animation so the new round starts clean
+    if (rollTimeoutRef.current) {
+      clearTimeout(rollTimeoutRef.current);
+      rollTimeoutRef.current = null;
+    }
+    setIsRolling(false);
 
     const score = calculatePotentialScore(gameState.dice, category);
 
@@ -103,7 +109,7 @@ export function useGameState() {
       isGameOver: isComplete,
       dice: prev.dice.map((die) => ({ ...die, isHeld: false })),
     }));
-  }, [gameState, isRolling]);
+  }, [gameState]);
 
   // Get potential score for a category
   const getPotentialScore = useCallback(
