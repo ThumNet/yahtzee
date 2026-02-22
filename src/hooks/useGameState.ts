@@ -156,7 +156,6 @@ export function useGameState() {
     toggleHold,
     scoreCategory,
     getPotentialScore,
-    resetGame,
     forceYahtzee,
     totalScore,
   };

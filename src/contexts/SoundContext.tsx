@@ -5,10 +5,7 @@ interface SoundContextType {
   toggleMute: () => void;
 }
 
-const SoundContext = createContext<SoundContextType>({
-  isMuted: false,
-  toggleMute: () => {},
-});
+const SoundContext = createContext<SoundContextType | undefined>(undefined);
 
 export function SoundProvider({ children }: { children: ReactNode }) {
   const [isMuted, setIsMuted] = useState(false);
@@ -24,6 +21,10 @@ export function SoundProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useSoundContext() {
-  return useContext(SoundContext);
+export function useSoundContext(): SoundContextType {
+  const ctx = useContext(SoundContext);
+  if (ctx === undefined) {
+    throw new Error('useSoundContext must be used within a SoundProvider');
+  }
+  return ctx;
 }

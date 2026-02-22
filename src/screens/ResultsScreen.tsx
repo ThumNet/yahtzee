@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Confetti } from '../components/Confetti';
+import React, { useEffect, useRef, useState } from 'react';import { Confetti } from '../components/Confetti';
 import { NeonButton } from '../components/NeonButton';
 import { Colors, Spacing, FontSize, BorderRadius } from '../utils/constants';
-import { saveHighScore, loadHighScores } from '../utils/storage';
+import { loadHighScores } from '../utils/storage';
+
 
 interface ResultsScreenProps {
   score: number;
@@ -18,10 +18,11 @@ export function ResultsScreen({ score, onPlayAgain, onGoHome }: ResultsScreenPro
   const [displayScore, setDisplayScore] = useState(0);
   const [glowIntensity, setGlowIntensity] = useState(0.5);
   const animFrameRef = useRef<number | null>(null);
+  const glowFrameRef = useRef<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
 
   useEffect(() => {
-    const checkAndSaveScore = async () => {
+    const loadScores = async () => {
       const scores = await loadHighScores();
       const currentHighScore = scores.length > 0 ? scores[0].score : 0;
       setHighScore(currentHighScore);
@@ -29,9 +30,8 @@ export function ResultsScreen({ score, onPlayAgain, onGoHome }: ResultsScreenPro
         setIsNewHighScore(true);
         setTimeout(() => setShowConfetti(true), 500);
       }
-      await saveHighScore({ score, date: new Date().toISOString(), playerName: 'Player' });
     };
-    checkAndSaveScore();
+    loadScores();
   }, [score]);
 
   useEffect(() => {
@@ -56,14 +56,15 @@ export function ResultsScreen({ score, onPlayAgain, onGoHome }: ResultsScreenPro
       const t = ((time - glowStart) % 3000) / 3000;
       const glow = 0.5 + 0.5 * Math.sin(t * Math.PI * 2);
       setGlowIntensity(glow);
-      animFrameRef.current = requestAnimationFrame(glowAnimate);
+      glowFrameRef.current = requestAnimationFrame(glowAnimate);
     };
     setTimeout(() => {
-      animFrameRef.current = requestAnimationFrame(glowAnimate);
+      glowFrameRef.current = requestAnimationFrame(glowAnimate);
     }, duration);
 
     return () => {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      if (glowFrameRef.current) cancelAnimationFrame(glowFrameRef.current);
     };
   }, [score]);
 
@@ -139,7 +140,7 @@ export function ResultsScreen({ score, onPlayAgain, onGoHome }: ResultsScreenPro
             FINAL SCORE
           </span>
           <span style={{
-            fontSize: 72,
+            fontSize: FontSize.jumbo,
             fontWeight: 'bold',
             color: Colors.text,
             textShadow: `0 0 15px ${Colors.primary}`,

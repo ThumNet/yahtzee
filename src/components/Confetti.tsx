@@ -35,6 +35,7 @@ export function Confetti({ active, onComplete }: ConfettiProps) {
   useEffect(() => {
     if (active && !hasAnimated.current) {
       hasAnimated.current = true;
+      if (timerRef.current) clearTimeout(timerRef.current);
 
       const newPieces: ConfettiPiece[] = Array.from({ length: NUM_PIECES }, (_, i) => ({
         id: i,

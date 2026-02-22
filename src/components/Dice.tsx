@@ -22,13 +22,12 @@ interface DiceProps {
   onToggleHold: (id: number) => void;
   disabled?: boolean;
   isRolling?: boolean;
-  compact?: boolean;
 }
 
-export function Dice({ die, onToggleHold, disabled = false, isRolling = false, compact = false }: DiceProps) {
-  const size = compact ? 48 : 64;
-  const dotSize = compact ? 7 : 10;
-  const inset = compact ? 5 : 6;
+export function Dice({ die, onToggleHold, disabled = false, isRolling = false }: DiceProps) {
+  const size = 64;
+  const dotSize = 10;
+  const inset = 6;
 
   const [rollKey, setRollKey] = useState(0);
   const [animDuration, setAnimDuration] = useState(400);

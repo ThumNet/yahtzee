@@ -76,6 +76,8 @@ export async function loadSettings(): Promise<GameSettings> {
 export async function saveHighScore(score: HighScore): Promise<void> {
   try {
     const scores = await loadHighScores();
+    // Deduplicate: skip if an entry with the same date already exists
+    if (scores.some(s => s.date === score.date)) return;
     scores.push(score);
     scores.sort((a, b) => b.score - a.score);
     const topScores = scores.slice(0, 10);

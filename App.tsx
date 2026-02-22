@@ -6,8 +6,10 @@ import { SplashScreen } from './src/screens/SplashScreen';
 import { HomeScreen } from './src/screens/HomeScreen';
 import { GameScreen } from './src/screens/GameScreen';
 import { ResultsScreen } from './src/screens/ResultsScreen';
+import { HighScoresScreen } from './src/screens/HighScoresScreen';
+import { saveHighScore } from './src/utils/storage';
 
-type Screen = 'splash' | 'home' | 'game' | 'results';
+type Screen = 'splash' | 'home' | 'game' | 'results' | 'highscores';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('splash');
@@ -23,6 +25,7 @@ export default function App() {
 
   const handleGameOver = useCallback((score: number) => {
     setFinalScore(score);
+    saveHighScore({ score, date: new Date().toISOString(), playerName: 'Player' });
     setCurrentScreen('results');
   }, []);
 
@@ -38,12 +41,16 @@ export default function App() {
     setCurrentScreen('home');
   }, []);
 
+  const handleShowHighScores = useCallback(() => {
+    setCurrentScreen('highscores');
+  }, []);
+
   const renderScreen = () => {
     switch (currentScreen) {
       case 'splash':
         return <SplashScreen onFinish={handleSplashFinish} />;
       case 'home':
-        return <HomeScreen onStartGame={handleStartGame} />;
+        return <HomeScreen onStartGame={handleStartGame} onShowHighScores={handleShowHighScores} />;
       case 'game':
         return <GameScreen onGameOver={handleGameOver} onQuit={handleQuit} />;
       case 'results':
@@ -54,6 +61,8 @@ export default function App() {
             onGoHome={handleGoHome}
           />
         );
+      case 'highscores':
+        return <HighScoresScreen onGoHome={handleGoHome} />;
     }
   };
 

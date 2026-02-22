@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Colors } from '../utils/constants';
+import { Colors, FontSize } from '../utils/constants';
 
 interface ScorePopupProps {
   score: number;
@@ -9,7 +9,7 @@ interface ScorePopupProps {
 }
 
 export function ScorePopup({ score, visible, onComplete, topPercent = 40 }: ScorePopupProps) {
-  const [animState, setAnimState] = useState<'hidden' | 'entering' | 'visible' | 'exiting'>('hidden');
+  const [animState, setAnimState] = useState<'hidden' | 'entering' | 'exiting'>('hidden');
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -32,9 +32,7 @@ export function ScorePopup({ score, visible, onComplete, topPercent = 40 }: Scor
   if (animState === 'hidden' || score === 0) return null;
 
   const opacity = animState === 'exiting' ? 0 : 1;
-  const transform = animState === 'entering' ? 'translateY(0) scale(1.2)' :
-                    animState === 'visible' ? 'translateY(-20px) scale(1)' :
-                    'translateY(-60px) scale(1)';
+  const transform = animState === 'entering' ? 'translateY(0) scale(1.2)' : 'translateY(-60px) scale(1)';
 
   return (
     <div
@@ -53,7 +51,7 @@ export function ScorePopup({ score, visible, onComplete, topPercent = 40 }: Scor
       }}
     >
       <span style={{
-        fontSize: 48,
+        fontSize: FontSize.title,
         fontWeight: 'bold',
         color: Colors.success,
         textShadow: `0 0 20px ${Colors.success}`,

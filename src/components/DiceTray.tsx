@@ -8,19 +8,18 @@ interface DiceTrayProps {
   onToggleHold: (id: number) => void;
   disabled?: boolean;
   isRolling?: boolean;
-  compact?: boolean;
 }
 
-export function DiceTray({ dice, onToggleHold, disabled = false, isRolling = false, compact = false }: DiceTrayProps) {
+export function DiceTray({ dice, onToggleHold, disabled = false, isRolling = false }: DiceTrayProps) {
   return (
     <div style={{
       display: 'flex',
       flexDirection: 'row',
       justifyContent: 'center',
       alignItems: 'center',
-      gap: compact ? Spacing.sm : Spacing.md,
-      paddingTop: compact ? Spacing.sm : Spacing.xl,
-      paddingBottom: compact ? Spacing.sm : Spacing.xl,
+      gap: Spacing.md,
+      paddingTop: Spacing.xl,
+      paddingBottom: Spacing.xl,
       paddingLeft: Spacing.md,
       paddingRight: Spacing.md,
     }}>
@@ -31,7 +30,6 @@ export function DiceTray({ dice, onToggleHold, disabled = false, isRolling = fal
           onToggleHold={onToggleHold}
           disabled={disabled}
           isRolling={isRolling}
-          compact={compact}
         />
       ))}
     </div>

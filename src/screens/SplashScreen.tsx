@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Logo } from '../components/Logo';
-import { Colors } from '../utils/constants';
+import { Colors, Spacing, FontSize } from '../utils/constants';
 
 interface SplashScreenProps {
   onFinish: () => void;
@@ -51,7 +51,7 @@ export function SplashScreen({ onFinish }: SplashScreenProps) {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, []);
+  }, [onFinish]);
 
   return (
     <div style={{
@@ -67,15 +67,15 @@ export function SplashScreen({ onFinish }: SplashScreenProps) {
       <div style={{
         opacity,
         transform: `scale(${scale})`,
-        marginBottom: 60,
+        marginBottom: Spacing.xxl + 12,
       }}>
         <Logo size="splash" />
       </div>
       <span style={{
         position: 'absolute',
-        bottom: 80,
+        bottom: Spacing.xxl + 32,
         color: Colors.textSecondary,
-        fontSize: 12,
+        fontSize: FontSize.xs,
         letterSpacing: 6,
         opacity,
       }}>

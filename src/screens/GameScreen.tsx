@@ -9,7 +9,6 @@ import { HeaderButton } from '../components/HeaderButton';
 import { HelpButton } from '../components/HelpButton';
 import { QuitConfirmModal } from '../components/QuitConfirmModal';
 import { useGameState } from '../hooks/useGameState';
-import { useHaptics } from '../hooks/useHaptics';
 import { useSound } from '../hooks/useSound';
 import { useKeyboard } from '../hooks/useKeyboard';
 import { useWindowDimensions } from '../hooks/useWindowDimensions';
@@ -27,7 +26,6 @@ interface GameScreenProps {
 export function GameScreen({ onGameOver, onQuit }: GameScreenProps) {
   const { width } = useWindowDimensions();
   const isWideScreen = width >= WIDE_SCREEN_BREAKPOINT;
-  const { triggerMedium, triggerLight, triggerSuccess } = useHaptics();
   const { playRollSound, playSelectSound, playScoreSound, playYahtzeeSound } = useSound();
   const { isMuted, toggleMute } = useSoundContext();
 
@@ -54,21 +52,18 @@ export function GameScreen({ onGameOver, onQuit }: GameScreenProps) {
   const isCurrentYahtzee = isYahtzee(gameState.dice);
 
   const handleRoll = useCallback(() => {
-    triggerMedium();
     playRollSound();
     rollDice();
     setSelectedCategoryIndex(null);
-  }, [rollDice, triggerMedium, playRollSound]);
+  }, [rollDice, playRollSound]);
 
   const handleToggleHold = useCallback((dieId: number) => {
-    triggerLight();
     playSelectSound();
     toggleHold(dieId);
-  }, [toggleHold, triggerLight, playSelectSound]);
+  }, [toggleHold, playSelectSound]);
 
   const handleScoreCategory = useCallback((category: ScoreCategory) => {
     const scoredPoints = calculatePotentialScore(gameState.dice, category);
-    triggerSuccess();
     const scoringYahtzee = isCurrentYahtzee && gameState.rollsLeft < MAX_ROLLS;
     const isYahtzeeBonus = scoringYahtzee && gameState.scorecard.yahtzee === YAHTZEE_POINTS;
     if (scoringYahtzee) {
@@ -90,7 +85,7 @@ export function GameScreen({ onGameOver, onQuit }: GameScreenProps) {
       }, 500);
     }
     scoreCategory(category);
-  }, [scoreCategory, triggerSuccess, playScoreSound, playYahtzeeSound, isCurrentYahtzee, gameState.dice, gameState.rollsLeft, gameState.scorecard.yahtzee]);
+  }, [scoreCategory, playScoreSound, playYahtzeeSound, isCurrentYahtzee, gameState.dice, gameState.rollsLeft, gameState.scorecard.yahtzee]);
 
   const handlePopupComplete = useCallback(() => {
     setShowPopup(false);

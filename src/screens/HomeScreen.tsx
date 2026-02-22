@@ -8,12 +8,13 @@ import { loadHighScores } from '../utils/storage';
 
 interface HomeScreenProps {
   onStartGame: () => void;
+  onShowHighScores: () => void;
 }
 
 const MENU_ITEMS = ['PLAY', 'HOW TO PLAY', 'HIGH SCORES'] as const;
 type MenuItem = typeof MENU_ITEMS[number];
 
-export function HomeScreen({ onStartGame }: HomeScreenProps) {
+export function HomeScreen({ onStartGame, onShowHighScores }: HomeScreenProps) {
   const [highScore, setHighScore] = useState<number | null>(null);
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(0);
@@ -21,6 +22,7 @@ export function HomeScreen({ onStartGame }: HomeScreenProps) {
   const handleMenuAction = (item: MenuItem) => {
     if (item === 'PLAY') onStartGame();
     else if (item === 'HOW TO PLAY') setShowKeyboardHelp(true);
+    else if (item === 'HIGH SCORES') onShowHighScores();
   };
 
   useEffect(() => {
@@ -108,7 +110,7 @@ export function HomeScreen({ onStartGame }: HomeScreenProps) {
         <div style={{ width: '100%', maxWidth: 300, display: 'flex', flexDirection: 'column', gap: Spacing.md }}>
           <NeonButton label="PLAY" onClick={onStartGame} variant="primary" focused={focusedIndex === 0} />
           <NeonButton label="HOW TO PLAY" onClick={() => setShowKeyboardHelp(true)} focused={focusedIndex === 1} />
-          <NeonButton label="HIGH SCORES" onClick={() => {}} focused={focusedIndex === 2} />
+          <NeonButton label="HIGH SCORES" onClick={onShowHighScores} focused={focusedIndex === 2} />
         </div>
       </div>
 

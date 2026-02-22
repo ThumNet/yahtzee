@@ -62,45 +62,6 @@ export const Colors = {
   gradientEnd: '#1a0a2a',
 };
 
-// Glow/Shadow effects
-export const Glow = {
-  cyan: {
-    shadowColor: '#00f0ff',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 10,
-    elevation: 10,
-  },
-  magenta: {
-    shadowColor: '#ff00ff',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 10,
-    elevation: 10,
-  },
-  yellow: {
-    shadowColor: '#ffff00',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  green: {
-    shadowColor: '#00ff88',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 10,
-    elevation: 10,
-  },
-  subtle: {
-    shadowColor: '#00f0ff',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 5,
-  },
-};
-
 // Layout
 export const Spacing = {
   xs: 4,
@@ -128,4 +89,5 @@ export const FontSize = {
   xxl: 32,
   title: 48,
   hero: 64,
+  jumbo: 72,
 };

@@ -33,14 +33,6 @@ export interface GameState {
   isGameOver: boolean;
 }
 
-// Player
-export interface Player {
-  id: string;
-  name: string;
-  scorecard: Scorecard;
-  totalScore: number;
-}
-
 // Game Settings
 export interface GameSettings {
   soundEnabled: boolean;

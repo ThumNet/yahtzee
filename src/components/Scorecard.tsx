@@ -17,16 +17,15 @@ interface ScoreRowProps {
   label: string;
   score: number | null;
   potentialScore: number | null;
-  onPress?: () => void;
+  onClick?: () => void;
   isTotal?: boolean;
   isBonus?: boolean;
-  compact?: boolean;
   isSelected?: boolean;
 }
 
-function ScoreRow({ label, score, potentialScore, onPress, isTotal = false, isBonus = false, compact = false, isSelected = false }: ScoreRowProps) {
+function ScoreRow({ label, score, potentialScore, onClick, isTotal = false, isBonus = false, isSelected = false }: ScoreRowProps) {
   const isScored = score !== null;
-  const canScore = !isScored && potentialScore !== null && onPress;
+  const canScore = !isScored && potentialScore !== null && onClick;
   const [hovered, setHovered] = useState(false);
 
   const getBg = () => {
@@ -43,10 +42,10 @@ function ScoreRow({ label, score, potentialScore, onPress, isTotal = false, isBo
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: compact ? 4 : Spacing.sm,
-    paddingBottom: compact ? 4 : Spacing.sm,
-    paddingLeft: compact ? Spacing.sm : Spacing.md,
-    paddingRight: compact ? Spacing.sm : Spacing.md,
+    paddingTop: 4,
+    paddingBottom: 4,
+    paddingLeft: Spacing.sm,
+    paddingRight: Spacing.sm,
     borderBottom: `1px solid ${Colors.border}`,
     borderLeft: isSelected ? `3px solid ${Colors.primary}` : (isBonus ? `2px solid ${Colors.warning}` : canScore ? `2px solid ${Colors.primary}` : 'none'),
     backgroundColor: getBg(),
@@ -56,7 +55,7 @@ function ScoreRow({ label, score, potentialScore, onPress, isTotal = false, isBo
 
   const labelColor = isTotal ? Colors.primary : isSelected ? Colors.primary : hovered && canScore ? Colors.primary : Colors.text;
   const labelStyle: React.CSSProperties = {
-    fontSize: compact ? FontSize.xs : FontSize.sm,
+    fontSize: FontSize.xs,
     color: labelColor,
     fontWeight: isTotal ? 'bold' : 'normal',
   };
@@ -65,7 +64,7 @@ function ScoreRow({ label, score, potentialScore, onPress, isTotal = false, isBo
     if (isScored) {
       return (
         <span style={{
-          fontSize: compact ? FontSize.sm : FontSize.md,
+          fontSize: FontSize.sm,
           fontWeight: isTotal ? 'bold' : '600',
           color: isTotal ? Colors.primary : Colors.text,
           textShadow: isTotal ? `0 0 4px ${Colors.primary}` : 'none',
@@ -77,7 +76,7 @@ function ScoreRow({ label, score, potentialScore, onPress, isTotal = false, isBo
     if (potentialScore !== null) {
       return (
         <span style={{
-          fontSize: compact ? FontSize.sm : FontSize.md,
+          fontSize: FontSize.sm,
           fontWeight: '600',
           color: isSelected ? Colors.primary : hovered ? Colors.primary : Colors.success,
           textShadow: `0 0 6px ${isSelected || hovered ? Colors.primary : Colors.success}`,
@@ -87,14 +86,14 @@ function ScoreRow({ label, score, potentialScore, onPress, isTotal = false, isBo
       );
     }
     return (
-      <span style={{ fontSize: compact ? FontSize.sm : FontSize.md, color: Colors.textSecondary }}>-</span>
+      <span style={{ fontSize: FontSize.sm, color: Colors.textSecondary }}>-</span>
     );
   };
 
   return (
     <div
       style={rowStyle}
-      onClick={canScore ? onPress : undefined}
+      onClick={canScore ? onClick : undefined}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
@@ -114,8 +113,6 @@ export function Scorecard({
   totalScore,
   selectedCategory,
 }: ScorecardProps) {
-  const compact = true; // always use compact rows; two-column layout on all screen sizes
-
   const upperTotal = calculateUpperTotal(scorecard);
   const upperBonus = calculateUpperBonus(scorecard);
   const lowerTotal = calculateLowerTotal(scorecard);
@@ -166,8 +163,7 @@ export function Scorecard({
           label={cat.label}
           score={scorecard[cat.key]}
           potentialScore={getPotentialScore(cat.key)}
-          onPress={() => onScoreCategory(cat.key)}
-          compact={compact}
+          onClick={() => onScoreCategory(cat.key)}
           isSelected={cat.key === selectedCategory}
         />
       ))}
@@ -176,9 +172,8 @@ export function Scorecard({
         score={upperBonus}
         potentialScore={null}
         isBonus
-        compact={compact}
       />
-      <ScoreRow label="Total" score={upperTotal + upperBonus} potentialScore={null} isTotal compact={compact} />
+      <ScoreRow label="Total" score={upperTotal + upperBonus} potentialScore={null} isTotal />
     </div>
   );
 
@@ -191,15 +186,14 @@ export function Scorecard({
           label={cat.label}
           score={scorecard[cat.key]}
           potentialScore={getPotentialScore(cat.key)}
-          onPress={() => onScoreCategory(cat.key)}
-          compact={compact}
+          onClick={() => onScoreCategory(cat.key)}
           isSelected={cat.key === selectedCategory}
         />
       ))}
       {yahtzeeBonus > 0 && (
-        <ScoreRow label="Yahtzee Bonus" score={yahtzeeBonus} potentialScore={null} isBonus compact={compact} />
+        <ScoreRow label="Yahtzee Bonus" score={yahtzeeBonus} potentialScore={null} isBonus />
       )}
-      <ScoreRow label="Total" score={lowerTotal + yahtzeeBonus} potentialScore={null} isTotal compact={compact} />
+      <ScoreRow label="Total" score={lowerTotal + yahtzeeBonus} potentialScore={null} isTotal />
     </div>
   );
 

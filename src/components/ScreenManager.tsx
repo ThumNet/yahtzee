@@ -12,13 +12,18 @@ export function ScreenManager({ screenKey, children, duration = 300 }: ScreenMan
   const [previousScreen, setPreviousScreen] = useState<ReactNode>(null);
   const [progress, setProgress] = useState(1);
   const prevKeyRef = useRef(screenKey);
+  const childrenRef = useRef<ReactNode>(children);
   const animFrameRef = useRef<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
+
+  // Keep ref in sync with latest children so the effect can read it without
+  // adding `children` to the dep array (which would re-run on every render).
+  childrenRef.current = children;
 
   useEffect(() => {
     if (screenKey !== prevKeyRef.current) {
       setPreviousScreen(currentScreen);
-      setCurrentScreen(children);
+      setCurrentScreen(childrenRef.current);
       setProgress(0);
       startTimeRef.current = null;
 
@@ -37,13 +42,12 @@ export function ScreenManager({ screenKey, children, duration = 300 }: ScreenMan
       };
       animFrameRef.current = requestAnimationFrame(animate);
       prevKeyRef.current = screenKey;
-    } else {
-      setCurrentScreen(children);
     }
     return () => {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     };
-  }, [screenKey, children, duration]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screenKey, duration]);
 
   const newScale = 0.85 + 0.15 * progress;
   const oldScale = 1 + 0.1 * progress;

@@ -32,7 +32,7 @@ function KeyBinding({ keys, description }: KeyBindingProps) {
               paddingLeft: 8,
               paddingRight: 8,
               border: `1px solid ${Colors.border}`,
-              borderBottomWidth: 3,
+              borderBottom: `3px solid ${Colors.border}`,
             }}>
               <span style={{ fontSize: FontSize.sm, fontWeight: 'bold', color: Colors.text }}>{key}</span>
             </div>
