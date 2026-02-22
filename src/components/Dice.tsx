@@ -2,13 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Die as DieType } from '../types';
 import { Colors, BorderRadius } from '../utils/constants';
 
-interface DiceProps {
-  die: DieType;
-  onToggleHold: (id: number) => void;
-  disabled?: boolean;
-  isRolling?: boolean;
-}
-
 // Dot layout grid: [row, col] positions (0-2 index in a 3x3 grid)
 const DOT_LAYOUT: Record<number, [number, number][]> = {
   1: [[1, 1]],
@@ -19,19 +12,31 @@ const DOT_LAYOUT: Record<number, [number, number][]> = {
   6: [[0, 0], [0, 2], [1, 0], [1, 2], [2, 0], [2, 2]],
 };
 
-// Five distinct animation variants — each die (id 1–5) gets its own
+// Five distinct animation variants — each die (id 0–4) gets its own
 const ROLL_VARIANTS = ['dice-roll-a', 'dice-roll-b', 'dice-roll-c', 'dice-roll-d', 'dice-roll-e'];
-// Slight duration variation so they don't all finish at the same time
-const ROLL_DURATIONS = [400, 430, 380, 420, 390];
+const DURATION_MIN = 250;
+const DURATION_MAX = 700;
 
-export function Dice({ die, onToggleHold, disabled = false, isRolling = false }: DiceProps) {
+interface DiceProps {
+  die: DieType;
+  onToggleHold: (id: number) => void;
+  disabled?: boolean;
+  isRolling?: boolean;
+  compact?: boolean;
+}
+
+export function Dice({ die, onToggleHold, disabled = false, isRolling = false, compact = false }: DiceProps) {
+  const size = compact ? 48 : 64;
+  const dotSize = compact ? 7 : 10;
+  const inset = compact ? 5 : 6;
   const dots = DOT_LAYOUT[die.value] || [];
-  // Increment to force the animation wrapper to remount each roll
   const [rollKey, setRollKey] = useState(0);
+  const [animDuration, setAnimDuration] = useState(400);
   const prevRollingRef = useRef(false);
 
   useEffect(() => {
     if (isRolling && !prevRollingRef.current && !die.isHeld) {
+      setAnimDuration(Math.floor(Math.random() * (DURATION_MAX - DURATION_MIN + 1)) + DURATION_MIN);
       setRollKey(k => k + 1);
     }
     prevRollingRef.current = isRolling;
@@ -43,11 +48,9 @@ export function Dice({ die, onToggleHold, disabled = false, isRolling = false }:
 
   const variantIndex = die.id % ROLL_VARIANTS.length;
   const animName = ROLL_VARIANTS[variantIndex];
-  const animDuration = ROLL_DURATIONS[variantIndex];
   const shouldAnimate = rollKey > 0 && !die.isHeld;
 
   return (
-    // Outer wrapper is keyed so it remounts each roll, restarting the CSS animation
     <div
       key={shouldAnimate ? rollKey : 'static'}
       style={{
@@ -59,8 +62,8 @@ export function Dice({ die, onToggleHold, disabled = false, isRolling = false }:
         onClick={() => !disabled && onToggleHold(die.id)}
         disabled={disabled}
         style={{
-          width: 64,
-          height: 64,
+          width: size,
+          height: size,
           backgroundColor: bg,
           borderRadius: BorderRadius.lg,
           border: `2px solid ${borderColor}`,
@@ -72,10 +75,9 @@ export function Dice({ die, onToggleHold, disabled = false, isRolling = false }:
           display: 'block',
         }}
       >
-        {/* 3x3 grid for dots */}
         <div style={{
           position: 'absolute',
-          inset: 6,
+          inset,
           display: 'grid',
           gridTemplateColumns: 'repeat(3, 1fr)',
           gridTemplateRows: 'repeat(3, 1fr)',
@@ -86,8 +88,8 @@ export function Dice({ die, onToggleHold, disabled = false, isRolling = false }:
               style={{
                 gridRow: row + 1,
                 gridColumn: col + 1,
-                width: 10,
-                height: 10,
+                width: dotSize,
+                height: dotSize,
                 borderRadius: '50%',
                 backgroundColor: Colors.diceDots,
                 boxShadow: `0 0 4px ${Colors.primary}`,

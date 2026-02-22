@@ -290,10 +290,11 @@ export function GameScreen({ onGameOver, onQuit }: GameScreenProps) {
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      paddingTop: Spacing.lg,
-      paddingBottom: Spacing.lg,
+      paddingTop: isWideScreen ? Spacing.lg : Spacing.xs,
+      paddingBottom: isWideScreen ? Spacing.lg : Spacing.xs,
       backgroundColor: isWideScreen ? 'transparent' : Colors.surface,
       borderBottom: isWideScreen ? 'none' : `1px solid ${Colors.border}`,
+      flexShrink: 0,
     }}>
       <DiceTray
         dice={gameState.dice}
@@ -306,13 +307,15 @@ export function GameScreen({ onGameOver, onQuit }: GameScreenProps) {
         rollsLeft={gameState.rollsLeft}
         disabled={gameState.rollsLeft <= 0 || isRolling}
       />
-      <span style={{ fontSize: FontSize.sm, color: Colors.textSecondary, marginTop: Spacing.md, letterSpacing: 1 }}>
-        {!canHoldDice
-          ? 'Roll the dice to start your turn'
-          : canHoldDice && gameState.rollsLeft > 0
-          ? 'Tap dice to hold, then roll or select a score'
-          : 'Select a category to score'}
-      </span>
+      {isWideScreen && (
+        <span style={{ fontSize: FontSize.sm, color: Colors.textSecondary, marginTop: Spacing.md, letterSpacing: 1 }}>
+          {!canHoldDice
+            ? 'Roll the dice to start your turn'
+            : canHoldDice && gameState.rollsLeft > 0
+            ? 'Tap dice to hold, then roll or select a score'
+            : 'Select a category to score'}
+        </span>
+      )}
     </div>
   );
 

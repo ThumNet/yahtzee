@@ -3,7 +3,6 @@ import { ScoreCategory, Scorecard as ScorecardType, UPPER_CATEGORIES, LOWER_CATE
 import { Colors, BorderRadius, Spacing, FontSize } from '../utils/constants';
 import { calculateUpperTotal, calculateUpperBonus, calculateLowerTotal } from '../utils/scoring';
 import { UPPER_BONUS_THRESHOLD } from '../utils/constants';
-import { useWindowDimensions } from '../hooks/useWindowDimensions';
 
 interface ScorecardProps {
   scorecard: ScorecardType;
@@ -24,8 +23,6 @@ interface ScoreRowProps {
   compact?: boolean;
   isSelected?: boolean;
 }
-
-const WIDE_SCREEN_BREAKPOINT = 768;
 
 function ScoreRow({ label, score, potentialScore, onPress, isTotal = false, isBonus = false, compact = false, isSelected = false }: ScoreRowProps) {
   const isScored = score !== null;
@@ -117,9 +114,7 @@ export function Scorecard({
   totalScore,
   selectedCategory,
 }: ScorecardProps) {
-  const { width } = useWindowDimensions();
-  const isWideScreen = width >= WIDE_SCREEN_BREAKPOINT;
-  const compact = isWideScreen;
+  const compact = true; // always use compact rows; two-column layout on all screen sizes
 
   const upperTotal = calculateUpperTotal(scorecard);
   const upperBonus = calculateUpperBonus(scorecard);
@@ -127,21 +122,21 @@ export function Scorecard({
 
   const sectionStyle: React.CSSProperties = {
     backgroundColor: Colors.surface,
-    borderRadius: compact ? BorderRadius.md : BorderRadius.lg,
-    marginBottom: compact ? Spacing.xs : Spacing.md,
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing.xs,
     overflow: 'hidden',
     border: `1px solid ${Colors.border}`,
   };
 
   const sectionTitleStyle: React.CSSProperties = {
-    fontSize: compact ? FontSize.xs : FontSize.sm,
+    fontSize: FontSize.xs,
     fontWeight: 'bold',
     color: Colors.primary,
     backgroundColor: Colors.surfaceLight,
-    paddingTop: compact ? Spacing.xs : Spacing.sm,
-    paddingBottom: compact ? Spacing.xs : Spacing.sm,
-    paddingLeft: compact ? Spacing.sm : Spacing.md,
-    paddingRight: compact ? Spacing.sm : Spacing.md,
+    paddingTop: Spacing.xs,
+    paddingBottom: Spacing.xs,
+    paddingLeft: Spacing.sm,
+    paddingRight: Spacing.sm,
     letterSpacing: 2,
     textShadow: `0 0 6px ${Colors.primary}`,
     display: 'block',
@@ -153,17 +148,18 @@ export function Scorecard({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: Colors.surfaceLight,
-    borderRadius: compact ? BorderRadius.md : BorderRadius.lg,
-    padding: compact ? Spacing.sm : Spacing.md,
-    marginBottom: compact ? Spacing.sm : Spacing.xl,
-    marginTop: compact ? Spacing.xs : 0,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.sm,
+    marginBottom: Spacing.sm,
+    marginTop: Spacing.xs,
     border: `2px solid ${Colors.primary}`,
     boxShadow: `0 0 12px ${Colors.primary}80`,
+    flexShrink: 0,
   };
 
   const upperSection = (
     <div style={sectionStyle}>
-      <span style={sectionTitleStyle}>{isWideScreen ? 'UPPER' : 'UPPER SECTION'}</span>
+      <span style={sectionTitleStyle}>UPPER</span>
       {UPPER_CATEGORIES.map((cat) => (
         <ScoreRow
           key={cat.key}
@@ -176,19 +172,19 @@ export function Scorecard({
         />
       ))}
       <ScoreRow
-        label={`${isWideScreen ? '' : 'Upper '}Bonus (${upperTotal}/${UPPER_BONUS_THRESHOLD})`}
+        label={`Bonus (${upperTotal}/${UPPER_BONUS_THRESHOLD})`}
         score={upperBonus}
         potentialScore={null}
         isBonus
         compact={compact}
       />
-      <ScoreRow label={isWideScreen ? 'Total' : 'Upper Total'} score={upperTotal + upperBonus} potentialScore={null} isTotal compact={compact} />
+      <ScoreRow label="Total" score={upperTotal + upperBonus} potentialScore={null} isTotal compact={compact} />
     </div>
   );
 
   const lowerSection = (
     <div style={sectionStyle}>
-      <span style={sectionTitleStyle}>{isWideScreen ? 'LOWER' : 'LOWER SECTION'}</span>
+      <span style={sectionTitleStyle}>LOWER</span>
       {LOWER_CATEGORIES.map((cat) => (
         <ScoreRow
           key={cat.key}
@@ -203,14 +199,14 @@ export function Scorecard({
       {yahtzeeBonus > 0 && (
         <ScoreRow label="Yahtzee Bonus" score={yahtzeeBonus} potentialScore={null} isBonus compact={compact} />
       )}
-      <ScoreRow label={isWideScreen ? 'Total' : 'Lower Total'} score={lowerTotal + yahtzeeBonus} potentialScore={null} isTotal compact={compact} />
+      <ScoreRow label="Total" score={lowerTotal + yahtzeeBonus} potentialScore={null} isTotal compact={compact} />
     </div>
   );
 
   const grandTotal = (
     <div style={grandTotalStyle}>
       <span style={{
-        fontSize: compact ? FontSize.md : FontSize.lg,
+        fontSize: FontSize.md,
         fontWeight: 'bold',
         color: Colors.primary,
         letterSpacing: 2,
@@ -219,7 +215,7 @@ export function Scorecard({
         GRAND TOTAL
       </span>
       <span style={{
-        fontSize: compact ? FontSize.xl : FontSize.xxl,
+        fontSize: FontSize.xl,
         fontWeight: 'bold',
         color: Colors.text,
         textShadow: `0 0 10px ${Colors.primary}`,
@@ -229,22 +225,12 @@ export function Scorecard({
     </div>
   );
 
-  if (isWideScreen) {
-    return (
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
-        <div style={{ display: 'flex', flexDirection: 'row', gap: Spacing.sm, flex: 1 }}>
-          <div style={{ flex: 1 }}>{upperSection}</div>
-          <div style={{ flex: 1 }}>{lowerSection}</div>
-        </div>
-        {grandTotal}
-      </div>
-    );
-  }
-
   return (
-    <div style={{ flex: 1, overflowY: 'auto' }}>
-      {upperSection}
-      {lowerSection}
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div style={{ display: 'flex', flexDirection: 'row', gap: Spacing.sm, flex: 1, overflow: 'hidden' }}>
+        <div style={{ flex: 1, overflowY: 'auto' }}>{upperSection}</div>
+        <div style={{ flex: 1, overflowY: 'auto' }}>{lowerSection}</div>
+      </div>
       {grandTotal}
     </div>
   );
