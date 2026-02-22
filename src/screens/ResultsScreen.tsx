@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Confetti } from '../components/Confetti';
+import { NeonButton } from '../components/NeonButton';
 import { Colors, Spacing, FontSize, BorderRadius } from '../utils/constants';
 import { saveHighScore, loadHighScores } from '../utils/storage';
 
@@ -7,54 +8,6 @@ interface ResultsScreenProps {
   score: number;
   onPlayAgain: () => void;
   onGoHome: () => void;
-}
-
-interface NeonButtonProps {
-  label: string;
-  onClick: () => void;
-  variant?: 'primary' | 'secondary';
-}
-
-function NeonButton({ label, onClick, variant = 'secondary' }: NeonButtonProps) {
-  const [hovered, setHovered] = useState(false);
-  const [pressed, setPressed] = useState(false);
-  const isPrimary = variant === 'primary';
-
-  return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => { setHovered(false); setPressed(false); }}
-      onMouseDown={() => setPressed(true)}
-      onMouseUp={() => setPressed(false)}
-      style={{
-        backgroundColor: pressed
-          ? (isPrimary ? Colors.success + '30' : Colors.primary + '20')
-          : hovered
-          ? (isPrimary ? Colors.success + '15' : Colors.primary + '10')
-          : 'transparent',
-        paddingTop: isPrimary ? Spacing.lg : Spacing.md,
-        paddingBottom: isPrimary ? Spacing.lg : Spacing.md,
-        borderRadius: isPrimary ? BorderRadius.xl : BorderRadius.lg,
-        border: `${isPrimary ? 2 : 1}px solid ${hovered ? (isPrimary ? Colors.success : Colors.primary) : (isPrimary ? Colors.success : Colors.border)}`,
-        boxShadow: isPrimary ? `0 0 ${hovered ? 15 : 10}px ${Colors.success}` : 'none',
-        cursor: 'pointer',
-        transform: pressed ? 'scale(0.98)' : 'scale(1)',
-        transition: 'all 0.15s',
-        width: '100%',
-      }}
-    >
-      <span style={{
-        color: isPrimary ? Colors.success : Colors.textSecondary,
-        fontSize: isPrimary ? FontSize.lg : FontSize.md,
-        fontWeight: isPrimary ? 'bold' : '600',
-        letterSpacing: isPrimary ? 3 : 2,
-        textShadow: isPrimary ? `0 0 8px ${Colors.success}` : 'none',
-      }}>
-        {label}
-      </span>
-    </button>
-  );
 }
 
 export function ResultsScreen({ score, onPlayAgain, onGoHome }: ResultsScreenProps) {

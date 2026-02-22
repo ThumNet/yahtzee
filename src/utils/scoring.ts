@@ -1,4 +1,4 @@
-import { Die, ScoreCategory, Scorecard } from '../types';
+import { Die, ScoreCategory, Scorecard, UPPER_CATEGORIES, LOWER_CATEGORIES } from '../types';
 import {
   FULL_HOUSE_POINTS,
   SMALL_STRAIGHT_POINTS,
@@ -63,7 +63,7 @@ function isLargeStraight(dice: Die[]): boolean {
 }
 
 // Check for yahtzee (5 of a kind)
-function isYahtzee(dice: Die[]): boolean {
+export function isYahtzee(dice: Die[]): boolean {
   return hasNOfAKind(dice, 5);
 }
 
@@ -107,7 +107,7 @@ export function calculatePotentialScore(dice: Die[], category: ScoreCategory): n
 
 // Calculate upper section total
 export function calculateUpperTotal(scorecard: Scorecard): number {
-  const upperCategories: (keyof Scorecard)[] = ['ones', 'twos', 'threes', 'fours', 'fives', 'sixes'];
+  const upperCategories = UPPER_CATEGORIES.map(c => c.key);
   return upperCategories.reduce((sum, cat) => sum + (scorecard[cat] || 0), 0);
 }
 
@@ -118,15 +118,7 @@ export function calculateUpperBonus(scorecard: Scorecard): number {
 
 // Calculate lower section total
 export function calculateLowerTotal(scorecard: Scorecard): number {
-  const lowerCategories: (keyof Scorecard)[] = [
-    'threeOfAKind',
-    'fourOfAKind',
-    'fullHouse',
-    'smallStraight',
-    'largeStraight',
-    'yahtzee',
-    'chance',
-  ];
+  const lowerCategories = LOWER_CATEGORIES.map(c => c.key);
   return lowerCategories.reduce((sum, cat) => sum + (scorecard[cat] || 0), 0);
 }
 

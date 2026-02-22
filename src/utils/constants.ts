@@ -6,6 +6,9 @@ export const UPPER_BONUS_THRESHOLD = 63;
 export const UPPER_BONUS_POINTS = 35;
 export const YAHTZEE_BONUS_POINTS = 100;
 
+// Layout
+export const WIDE_SCREEN_BREAKPOINT = 768;
+
 // Scoring Values
 export const FULL_HOUSE_POINTS = 25;
 export const SMALL_STRAIGHT_POINTS = 30;

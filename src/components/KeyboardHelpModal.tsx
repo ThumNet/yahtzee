@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useCallback } from 'react';
 import { Colors, BorderRadius, Spacing, FontSize } from '../utils/constants';
+import { useKeyboard } from '../hooks/useKeyboard';
 
 interface KeyboardHelpModalProps {
   visible: boolean;
@@ -47,14 +48,11 @@ function KeyBinding({ keys, description }: KeyBindingProps) {
 }
 
 export function KeyboardHelpModal({ visible, onClose }: KeyboardHelpModalProps) {
-  useEffect(() => {
-    if (!visible) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { e.preventDefault(); onClose(); }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [visible, onClose]);
+  const handleKeyPress = useCallback((key: string) => {
+    if (key === 'Escape') onClose();
+  }, [onClose]);
+
+  useKeyboard(handleKeyPress, visible);
 
   if (!visible) return null;
 

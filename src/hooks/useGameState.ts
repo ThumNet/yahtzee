@@ -5,6 +5,7 @@ import {
   createEmptyScorecard,
   isScorecardComplete,
   calculateGrandTotal,
+  isYahtzee,
 } from '../utils/scoring';
 import { NUM_DICE, MAX_ROLLS, YAHTZEE_BONUS_POINTS, YAHTZEE_POINTS } from '../utils/constants';
 
@@ -73,9 +74,6 @@ export function useGameState() {
 
   // Score a category
   const scoreCategory = useCallback((category: ScoreCategory) => {
-    if (gameState.scorecard[category] !== null) return;
-    if (gameState.rollsLeft === MAX_ROLLS) return;
-
     // Cancel any in-flight roll animation so the new round starts clean
     if (rollTimeoutRef.current) {
       clearTimeout(rollTimeoutRef.current);
@@ -83,33 +81,36 @@ export function useGameState() {
     }
     setIsRolling(false);
 
-    const score = calculatePotentialScore(gameState.dice, category);
+    setGameState((prev) => {
+      if (prev.scorecard[category] !== null) return prev;
+      if (prev.rollsLeft === MAX_ROLLS) return prev;
 
-    let yahtzeeBonus = gameState.yahtzeeBonus;
-    const isYahtzee = gameState.dice.every((d) => d.value === gameState.dice[0].value);
+      const score = calculatePotentialScore(prev.dice, category);
 
-    if (isYahtzee && gameState.scorecard.yahtzee === YAHTZEE_POINTS) {
-      yahtzeeBonus += YAHTZEE_BONUS_POINTS;
-    }
+      let yahtzeeBonus = prev.yahtzeeBonus;
+      if (isYahtzee(prev.dice) && prev.scorecard.yahtzee === YAHTZEE_POINTS) {
+        yahtzeeBonus += YAHTZEE_BONUS_POINTS;
+      }
 
-    const newScorecard: Scorecard = {
-      ...gameState.scorecard,
-      [category]: score,
-    };
+      const newScorecard: Scorecard = {
+        ...prev.scorecard,
+        [category]: score,
+      };
 
-    const isComplete = isScorecardComplete(newScorecard);
-    const nextRound = isComplete ? gameState.currentRound : gameState.currentRound + 1;
+      const isComplete = isScorecardComplete(newScorecard);
+      const nextRound = isComplete ? prev.currentRound : prev.currentRound + 1;
 
-    setGameState((prev) => ({
-      ...prev,
-      scorecard: newScorecard,
-      yahtzeeBonus,
-      currentRound: nextRound,
-      rollsLeft: MAX_ROLLS,
-      isGameOver: isComplete,
-      dice: prev.dice.map((die) => ({ ...die, isHeld: false })),
-    }));
-  }, [gameState]);
+      return {
+        ...prev,
+        scorecard: newScorecard,
+        yahtzeeBonus,
+        currentRound: nextRound,
+        rollsLeft: MAX_ROLLS,
+        isGameOver: isComplete,
+        dice: prev.dice.map((die) => ({ ...die, isHeld: false })),
+      };
+    });
+  }, []);
 
   // Get potential score for a category
   const getPotentialScore = useCallback(

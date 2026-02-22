@@ -5,165 +5,23 @@ import { Scorecard } from '../components/Scorecard';
 import { ScorePopup } from '../components/ScorePopup';
 import { Confetti } from '../components/Confetti';
 import { KeyboardHelpModal } from '../components/KeyboardHelpModal';
+import { HeaderButton } from '../components/HeaderButton';
+import { HelpButton } from '../components/HelpButton';
+import { QuitConfirmModal } from '../components/QuitConfirmModal';
 import { useGameState } from '../hooks/useGameState';
 import { useHaptics } from '../hooks/useHaptics';
 import { useSound } from '../hooks/useSound';
 import { useKeyboard } from '../hooks/useKeyboard';
 import { useWindowDimensions } from '../hooks/useWindowDimensions';
 import { useSoundContext } from '../contexts/SoundContext';
-import { Colors, Spacing, FontSize, BorderRadius } from '../utils/constants';
-import { MAX_ROLLS, TOTAL_ROUNDS, YAHTZEE_BONUS_POINTS, YAHTZEE_POINTS } from '../utils/constants';
+import { Colors, Spacing, FontSize } from '../utils/constants';
+import { MAX_ROLLS, TOTAL_ROUNDS, YAHTZEE_BONUS_POINTS, YAHTZEE_POINTS, WIDE_SCREEN_BREAKPOINT } from '../utils/constants';
 import { ScoreCategory, ALL_CATEGORIES } from '../types';
-import { calculatePotentialScore } from '../utils/scoring';
+import { calculatePotentialScore, isYahtzee } from '../utils/scoring';
 
 interface GameScreenProps {
   onGameOver: (score: number) => void;
   onQuit: () => void;
-}
-
-const WIDE_SCREEN_BREAKPOINT = 768;
-
-interface HeaderButtonProps {
-  label: string;
-  onClick: () => void;
-  color?: string;
-}
-
-function HeaderButton({ label, onClick, color = Colors.textSecondary }: HeaderButtonProps) {
-  const [hovered, setHovered] = useState(false);
-  const [pressed, setPressed] = useState(false);
-  return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => { setHovered(false); setPressed(false); }}
-      onMouseDown={() => setPressed(true)}
-      onMouseUp={() => setPressed(false)}
-      style={{
-        padding: Spacing.sm,
-        border: `1px solid ${hovered ? (color === Colors.error ? Colors.error : Colors.primary) : color}`,
-        borderRadius: BorderRadius.md,
-        backgroundColor: pressed ? (color + '40') : hovered ? (color + '20') : 'transparent',
-        cursor: 'pointer',
-        transform: pressed ? 'scale(0.95)' : 'scale(1)',
-        transition: 'all 0.1s',
-      }}
-    >
-      <span style={{ color, fontSize: FontSize.xs, fontWeight: 'bold', letterSpacing: 1 }}>
-        {label}
-      </span>
-    </button>
-  );
-}
-
-function QuitConfirmModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Enter') { e.preventDefault(); onConfirm(); }
-      if (e.key === 'Escape') { e.preventDefault(); onCancel(); }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [onConfirm, onCancel]);
-  return (
-    <div style={{
-      position: 'fixed',
-      inset: 0,
-      backgroundColor: 'rgba(0,0,0,0.75)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 200,
-    }}>
-      <div style={{
-        backgroundColor: Colors.surface,
-        border: `1px solid ${Colors.error}`,
-        borderRadius: BorderRadius.xl,
-        padding: Spacing.xl,
-        maxWidth: 320,
-        width: '90%',
-        boxShadow: `0 0 30px ${Colors.error}40`,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: Spacing.lg,
-      }}>
-        <span style={{ fontSize: FontSize.xl, fontWeight: 'bold', color: Colors.text, letterSpacing: 2 }}>
-          QUIT GAME?
-        </span>
-        <span style={{ fontSize: FontSize.sm, color: Colors.textSecondary, textAlign: 'center' }}>
-          Your progress will be lost.
-        </span>
-        <div style={{ display: 'flex', gap: Spacing.md, width: '100%' }}>
-          <button
-            onClick={onCancel}
-            style={{
-              flex: 1,
-              padding: Spacing.md,
-              backgroundColor: 'transparent',
-              border: `1px solid ${Colors.border}`,
-              borderRadius: BorderRadius.lg,
-              color: Colors.textSecondary,
-              fontSize: FontSize.sm,
-              fontWeight: 'bold',
-              letterSpacing: 2,
-              cursor: 'pointer',
-            }}
-          >
-            CANCEL
-          </button>
-          <button
-            onClick={onConfirm}
-            style={{
-              flex: 1,
-              padding: Spacing.md,
-              backgroundColor: Colors.error + '20',
-              border: `1px solid ${Colors.error}`,
-              borderRadius: BorderRadius.lg,
-              color: Colors.error,
-              fontSize: FontSize.sm,
-              fontWeight: 'bold',
-              letterSpacing: 2,
-              cursor: 'pointer',
-              boxShadow: `0 0 10px ${Colors.error}40`,
-            }}
-          >
-            QUIT
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function HelpButton({ onClick }: { onClick: () => void }) {
-  const [hovered, setHovered] = useState(false);
-  const [pressed, setPressed] = useState(false);
-  return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => { setHovered(false); setPressed(false); }}
-      onMouseDown={() => setPressed(true)}
-      onMouseUp={() => setPressed(false)}
-      style={{
-        width: 32,
-        height: 32,
-        border: `1px solid ${Colors.primary}`,
-        borderRadius: 16,
-        backgroundColor: pressed ? Colors.primary + '40' : hovered ? Colors.primary + '20' : 'transparent',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        boxShadow: hovered ? `0 0 5px ${Colors.primary}` : 'none',
-        transform: pressed ? 'scale(0.95)' : 'scale(1)',
-        transition: 'all 0.1s',
-      }}
-    >
-      <span style={{ color: Colors.primary, fontSize: FontSize.md, fontWeight: 'bold' }}>?</span>
-    </button>
-  );
 }
 
 export function GameScreen({ onGameOver, onQuit }: GameScreenProps) {
@@ -193,7 +51,7 @@ export function GameScreen({ onGameOver, onQuit }: GameScreenProps) {
     totalScore,
   } = useGameState();
 
-  const isYahtzee = gameState.dice.every(d => d.value === gameState.dice[0].value);
+  const isCurrentYahtzee = isYahtzee(gameState.dice);
 
   const handleRoll = useCallback(() => {
     triggerMedium();
@@ -211,7 +69,7 @@ export function GameScreen({ onGameOver, onQuit }: GameScreenProps) {
   const handleScoreCategory = useCallback((category: ScoreCategory) => {
     const scoredPoints = calculatePotentialScore(gameState.dice, category);
     triggerSuccess();
-    const scoringYahtzee = isYahtzee && gameState.rollsLeft < MAX_ROLLS;
+    const scoringYahtzee = isCurrentYahtzee && gameState.rollsLeft < MAX_ROLLS;
     const isYahtzeeBonus = scoringYahtzee && gameState.scorecard.yahtzee === YAHTZEE_POINTS;
     if (scoringYahtzee) {
       playYahtzeeSound();
@@ -232,7 +90,7 @@ export function GameScreen({ onGameOver, onQuit }: GameScreenProps) {
       }, 500);
     }
     scoreCategory(category);
-  }, [scoreCategory, triggerSuccess, playScoreSound, playYahtzeeSound, isYahtzee, gameState.dice, gameState.rollsLeft, gameState.scorecard.yahtzee]);
+  }, [scoreCategory, triggerSuccess, playScoreSound, playYahtzeeSound, isCurrentYahtzee, gameState.dice, gameState.rollsLeft, gameState.scorecard.yahtzee]);
 
   const handlePopupComplete = useCallback(() => {
     setShowPopup(false);
@@ -254,7 +112,8 @@ export function GameScreen({ onGameOver, onQuit }: GameScreenProps) {
       return;
     }
     // Other keys are blocked while quit confirm is showing
-    if (showQuitConfirm) return;    const availableCategories = getAvailableCategories();
+    if (showQuitConfirm) return;
+    const availableCategories = getAvailableCategories();
     switch (key) {
       case ' ':
         if (gameState.rollsLeft > 0) handleRoll();

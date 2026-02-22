@@ -6,6 +6,16 @@ const STORAGE_KEYS = {
   HIGH_SCORES: '@yahtzee/highScores',
 };
 
+function isValidHighScore(item: unknown): item is HighScore {
+  return (
+    typeof item === 'object' &&
+    item !== null &&
+    typeof (item as HighScore).score === 'number' &&
+    typeof (item as HighScore).date === 'string' &&
+    typeof (item as HighScore).playerName === 'string'
+  );
+}
+
 // Game State
 export async function saveGameState(gameState: GameState): Promise<void> {
   try {
@@ -78,7 +88,14 @@ export async function saveHighScore(score: HighScore): Promise<void> {
 export async function loadHighScores(): Promise<HighScore[]> {
   try {
     const data = localStorage.getItem(STORAGE_KEYS.HIGH_SCORES);
-    return data ? JSON.parse(data) : [];
+    if (!data) return [];
+    const parsed: unknown = JSON.parse(data);
+    if (!Array.isArray(parsed)) return [];
+    const valid = parsed.filter(isValidHighScore);
+    if (valid.length !== parsed.length) {
+      console.warn('Some high score entries were malformed and discarded.');
+    }
+    return valid;
   } catch (error) {
     console.error('Error loading high scores:', error);
     return [];

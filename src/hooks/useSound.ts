@@ -3,12 +3,9 @@ import { useSoundContext } from '../contexts/SoundContext';
 
 type SoundType = 'roll' | 'select' | 'score' | 'yahtzee';
 
-const soundFiles: Record<SoundType, string> = {
-  roll: '/assets/audio/roll.wav',
-  select: '/assets/audio/select.wav',
-  score: '/assets/audio/score.wav',
-  yahtzee: '/assets/audio/yahtzee.wav',
-};
+function soundPath(file: string): string {
+  return `${import.meta.env.BASE_URL}audio/${file}`;
+}
 
 export function useSound() {
   const { isMuted } = useSoundContext();
@@ -16,7 +13,7 @@ export function useSound() {
   const playSound = useCallback((type: SoundType) => {
     if (isMuted) return;
     try {
-      const audio = new Audio(soundFiles[type]);
+      const audio = new Audio(soundPath(`${type}.wav`));
       audio.volume = 0.7;
       audio.play().catch(() => {
         // Silently fail - audio is not critical
